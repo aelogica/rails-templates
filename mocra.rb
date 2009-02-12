@@ -16,7 +16,7 @@
 # Download JQuery
   run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.1.min.js > public/javascripts/jquery.js"
   run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
-  run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/templating/jquery.templating.js > public/javascripts/jquery.templating.js"
+  run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
 
 # Set up git repository
   git :init
