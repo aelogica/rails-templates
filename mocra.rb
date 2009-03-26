@@ -76,9 +76,30 @@ ActionController::Base.session_store = :active_record_store
   else
     generate "authenticated", "user session"
   end
-  rake 'db:migrate'
+  generate 'controller', 'home index'
+  generate 'controller', 'protected index'
+
+  file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
+  class ProtectedController < ApplicationController
+    before_filter :login_required
+
+    def index
+    end
+
+  end
+  EOS
+
+  file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
+  file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
+  
+  if ENV['TWITTER']
+    append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE"
+    append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE"
+  end
   
   file 'spec/blueprints.rb', ''
+
+  rake 'db:migrate'
 
 # Initialize submodules
   git :submodule => "init"
@@ -93,6 +114,8 @@ ActionController::Base.session_store = :active_record_store
     route "map.logout '/logout', :controller => 'session', :action => 'destroy'"
     route "map.activate '/activate/:activation_code', :controller => 'users', :action => 'activate', :activation_code => nil"
   end
+  
+  route "map.root :controller => 'home', :action => 'index'"
   
   if ENV['TWITTER']
     puts "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
