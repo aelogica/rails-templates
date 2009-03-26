@@ -1,5 +1,9 @@
 # mocra.rb
 # from Dr Nic Williams @ http://mocra.com + http://drnicwilliams.com
+# 
+# Optional:
+#  TWITTER=1    - install + setup twitter_auth instead of restful_authentication
+#  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #
 # based on daring.rb from Peter Cooper
 
@@ -46,31 +50,35 @@ ActionController::Base.session_store = :active_record_store
 # Install submoduled plugins
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
-  plugin 'asset_packager', :git => 'git://github.com/sbecker/asset_packager.git', :submodule => true
-  plugin 'open_id_authentication', :git => 'git://github.com/rails/open_id_authentication.git', :submodule => true
-  plugin 'role_requirement', :git => 'git://github.com/timcharper/role_requirement.git', :submodule => true
-  plugin 'restful-authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
-  plugin 'acts_as_taggable_redux', :git => 'git://github.com/geemus/acts_as_taggable_redux.git', :submodule => true
-  plugin 'aasm', :git => 'git://github.com/rubyist/aasm.git', :submodule => true
+  plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
+  plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git', :submodule => true
+  plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
+  plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
+  plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
 
 # Install all gems
-  gem 'thoughtbot-factory_girl', :lib => 'factory_girl', :source => 'http://gems.github.com'
-  gem 'ruby-openid', :lib => 'openid'
   gem 'sqlite3-ruby', :lib => 'sqlite3'
-  gem 'hpricot', :source => 'http://code.whytheluckystiff.net'
-  gem 'RedCloth', :lib => 'redcloth'
+  if ENV['TWITTER']
+    gem 'twitter-auth', :lib => 'twitter_auth'
+  else                
+    gem 'authenticated', 'User --include-activation --rspec'
+  end
 
-  rake('gems:install', :sudo => true)
+  rake 'gems:install', :sudo => true unless ENV['SKIP_GEMS']
 
 
 # Set up sessions, RSpec, user model, OpenID, etc, and run migrations
-  rake('db:sessions:create')
-  generate("authenticated", "user session")
-  generate("roles", "Role User")
-  generate("rspec")
-  rake('acts_as_taggable:db:create')
-  rake('open_id_authentication:db:create')
-  rake('db:migrate')
+  rake 'db:sessions:create'
+  generate "rspec"
+  generate "cucumber"
+  if ENV['TWITTER']
+    generate "twitter_auth --oauth"
+  else
+    generate "authenticated", "user session"
+  end
+  rake 'db:migrate'
+  
+  file 'spec/blueprints.rb', ''
 
 # Initialize submodules
   git :submodule => "init"
@@ -79,5 +87,17 @@ ActionController::Base.session_store = :active_record_store
   git :add => '.'
   git :commit => "-a -m 'Initial commit'"
 
+  unless ENV['TWITTER']
+    route "map.signup  '/signup', :controller => 'users',   :action => 'new'"
+    route "map.login  '/login',  :controller => 'session', :action => 'new'"
+    route "map.logout '/logout', :controller => 'session', :action => 'destroy'"
+    route "map.activate '/activate/:activation_code', :controller => 'users', :action => 'activate', :activation_code => nil"
+  end
+  
+  if ENV['TWITTER']
+    puts "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
+    `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
+  end
+  
 # Success!
   puts "SUCCESS!"
