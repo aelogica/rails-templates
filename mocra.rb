@@ -89,7 +89,20 @@ ActionController::Base.session_store = :active_record_store
   end
   EOS
 
-  file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
+  if ENV['TWITTER']
+    file 'app/views/home/index.html.erb', <<-EOS.gsub(/^    /, '')
+    <%= link_to "Protected", :controller => :protected %>
+
+    <h3>Recent users (<%= User.count %>)</h3>
+    <ul>
+    <% for user in User.all -%>
+      <li><%= image_tag(user.profile_image_url) %><%= user.name %> (<%= link_to h(user.login), "http://twitter.com/#{h user.login}" %>)</li>
+    <% end -%>
+    </ul>
+    EOS
+  else
+    file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
+  end
   file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
   if ENV['TWITTER']
