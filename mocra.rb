@@ -101,13 +101,7 @@ ActionController::Base.session_store = :active_record_store
 
   rake 'db:migrate'
 
-# Initialize submodules
-  git :submodule => "init"
-
-# Commit all work so far to the repository
-  git :add => '.'
-  git :commit => "-a -m 'Initial commit'"
-
+# Routes
   unless ENV['TWITTER']
     route "map.signup  '/signup', :controller => 'users',   :action => 'new'"
     route "map.login  '/login',  :controller => 'session', :action => 'new'"
@@ -117,6 +111,14 @@ ActionController::Base.session_store = :active_record_store
   
   route "map.root :controller => 'home', :action => 'index'"
   
+
+# Initialize submodules
+  git :submodule => "init"
+
+# Commit all work so far to the repository
+  git :add => '.'
+  git :commit => "-a -m 'Initial commit'"
+
   if ENV['TWITTER']
     puts "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
     `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
