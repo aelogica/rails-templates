@@ -55,6 +55,7 @@ ActionController::Base.session_store = :active_record_store
   plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
+  plugin 'email-spec', :git => 'git://github.com/bmabey/email-spec.git', :submodule => true
 
 # Install all gems
   gem 'sqlite3-ruby', :lib => 'sqlite3'
@@ -71,6 +72,7 @@ ActionController::Base.session_store = :active_record_store
   rake 'db:sessions:create'
   generate "rspec"
   generate "cucumber"
+  generate "email_spec"
   if ENV['TWITTER']
     generate "twitter_auth --oauth"
   else
