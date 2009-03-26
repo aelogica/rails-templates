@@ -18,7 +18,7 @@
   run "rm -f public/javascripts/*"
 
 # Download JQuery
-  run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.1.min.js > public/javascripts/jquery.js"
+  run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
   run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
   run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
 
@@ -81,8 +81,10 @@ ActionController::Base.session_store = :active_record_store
 
   generate "email_spec"
   
-  append_file 'features/support/env.rb', 'require "email_spec/cucumber"'
-  append_file 'features/support/env.rb', 'require File.dirname(__FILE__) + "/../../spec/blueprints"'
+  append_file 'features/support/env.rb', <<-EOS.gsub(/^  /, '')
+  require "email_spec/cucumber"
+  require File.dirname(__FILE__) + "/../../spec/blueprints"
+  EOS
   
   generate 'controller', 'home index'
   generate 'controller', 'protected index'
@@ -114,8 +116,8 @@ ActionController::Base.session_store = :active_record_store
   file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
   if ENV['TWITTER']
-    append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE"
-    append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE"
+    append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
+    append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
   end
   
   file 'spec/blueprints.rb', ''
