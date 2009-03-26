@@ -78,6 +78,7 @@ ActionController::Base.session_store = :active_record_store
   end
   generate 'controller', 'home index'
   generate 'controller', 'protected index'
+  generate 'app_layout' rescue nil
 
   file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
   class ProtectedController < ApplicationController
