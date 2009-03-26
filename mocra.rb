@@ -55,7 +55,7 @@ ActionController::Base.session_store = :active_record_store
   plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
-  plugin 'email-spec', :git => 'git://github.com/bmabey/email-spec.git', :submodule => true
+  plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
 
 # Install all gems
   gem 'sqlite3-ruby', :lib => 'sqlite3'
@@ -72,15 +72,20 @@ ActionController::Base.session_store = :active_record_store
   rake 'db:sessions:create'
   generate "rspec"
   generate "cucumber"
-  generate "email_spec"
   if ENV['TWITTER']
     generate "twitter_auth --oauth"
   else
     generate "authenticated", "user session"
   end
+  generate 'app_layout' rescue nil
+
+  generate "email_spec"
+  
+  append_file 'features/support/env.rb', 'require "email_spec/cucumber"'
+  append_file 'features/support/env.rb', 'require File.dirname(__FILE__) + "/../../spec/blueprints"'
+  
   generate 'controller', 'home index'
   generate 'controller', 'protected index'
-  generate 'app_layout' rescue nil
 
   file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
   class ProtectedController < ApplicationController
@@ -99,7 +104,7 @@ ActionController::Base.session_store = :active_record_store
     <h3>Recent users (<%= User.count %>)</h3>
     <ul>
     <% for user in User.all -%>
-      <li><%= image_tag(user.profile_image_url) %><%= user.name %> (<%= link_to h(user.login), "http://twitter.com/#{h user.login}" %>)</li>
+      <li><%= image_tag(user.profile_image_url) %><%= user.name %> (<%= link_to h(user.login), "http://twitter.com/\#{h user.login}" %>)</li>
     <% end -%>
     </ul>
     EOS
@@ -118,7 +123,13 @@ ActionController::Base.session_store = :active_record_store
   rake 'db:migrate'
 
 # Routes
-  unless ENV['TWITTER']
+  if ENV['TWITTER']
+    route "map.login  '/login',  :controller => 'session', :action => 'new'"
+    route "map.session_create  '/sessions/create',  :controller => 'session', :action => 'create'"
+    route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
+    route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
+    
+  else
     route "map.signup  '/signup', :controller => 'users',   :action => 'new'"
     route "map.login  '/login',  :controller => 'session', :action => 'new'"
     route "map.logout '/logout', :controller => 'session', :action => 'destroy'"
