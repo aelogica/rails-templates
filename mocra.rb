@@ -10,11 +10,52 @@
 # Useful variables
   app_name       = File.basename(root)
   domain         = "mocra.com"
-  app_url        = "#{app_name}.#{domain}"
+  app_url        = "#{app_name.gsub(/_/, '-')}.#{domain}"
+  organization   = "Mocra"
+  description    = ENV['DESCRIPTION'] || 'This is a cool app'
   no_downloading = ENV['NO_DOWNLOADING']
   skip_gems      = ENV['SKIP_GEMS']
   twitter_auth   = ENV['TWITTER']
+
+# Tools for the script
+require "highline"
+
+def highline
+  @highline ||= HighLine.new
+end
+
+def parse_keys(message)
+  {
+    :key    => message.match(/Consumer key:\s+(.*)/)[1],
+    :secret => message.match(/Consumer secret:\s+(.*)/)[1]
+  }
+end
+
+def run_template
+  yield unless ENV['NO_RUN']
+end
+
+run_template do
+
+# Twitter app registation
+if twitter_auth
   
+  # requires: 
+  # * sudo gem install twitter (need drnic version with register_oauth command)
+  # * twitter install
+  # * twitter add
+  twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
+  twitter_user = highline.choose(*twitter_users) do |menu|
+    menu.prompt = "Which twitter user?  "
+  end
+  keys = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+  # keys:
+  # success:
+  # "Nice! You've registered your application successfully.\nConsumer key:    BYaEuNzZgVnMkYxFhF9mg\nConsumer secret: D9f0tpR03ABPYnuyEIfM21kUNn3lJTKo3RLPnztfQ\n"
+  # failure:
+  # "Unable to register this application. Check your registration settings.\n* Name has already been taken\n"
+end
+
 # Link to local copy of edge rails
   # inside('vendor') { run 'ln -s ~/dev/rails/rails rails' }
 
@@ -233,7 +274,10 @@ end
   #  # ssh git@github.com
   #  => 'yes'
   #  Hi drnic! You've successfully authenticated, but GitHub does not provide shell access.
-  
+  #
+  # twitter_auth
+  # * register twitter app http://twitter.com/oauth_clients
+  # * copy keys into twitter_auth.yml
   
   require 'deprec'
 
@@ -299,3 +343,5 @@ end
   
 # Success!
   puts "SUCCESS!"
+
+end
