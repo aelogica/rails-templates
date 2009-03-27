@@ -1,5 +1,5 @@
 # mocra.rb
-# from Dr Nic Williams @ http://mocra.com + http://drnicwilliams.com
+# from Dr Nic Williams @ http://#{domain} + http://drnicwilliams.com
 # 
 # Optional:
 #  TWITTER=1    - install + setup twitter_auth instead of restful_authentication
@@ -7,6 +7,14 @@
 #
 # based on daring.rb from Peter Cooper
 
+# Useful variables
+  app_name       = File.basename(root)
+  domain         = "mocra.com"
+  app_url        = "#{app_name}.#{domain}"
+  no_downloading = ENV['NO_DOWNLOADING']
+  skip_gems      = ENV['SKIP_GEMS']
+  twitter_auth   = ENV['TWITTER']
+  
 # Link to local copy of edge rails
   # inside('vendor') { run 'ln -s ~/dev/rails/rails rails' }
 
@@ -18,28 +26,62 @@
   run "rm -f public/javascripts/*"
 
 # Download JQuery
+unless no_downloading
   run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
   run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
   run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
-
+end
 # Set up git repository
   git :init
   git :add => '.'
   
+  file 'config/database.yml', <<-EOS.gsub(/^  /, '')
+  development:
+    adapter: mysql
+    encoding: utf8
+    reconnect: false
+    database: #{app_name}_development
+    pool: 5
+    username: root
+    password:
+    socket: /tmp/mysql.sock
+
+  test:
+    adapter: mysql
+    encoding: utf8
+    reconnect: false
+    database: #{app_name}_test
+    pool: 5
+    username: root
+    password:
+    socket: /tmp/mysql.sock
+
+  production:
+    adapter: mysql
+    encoding: utf8
+    reconnect: false
+    database: #{app_name}_production
+    pool: 5
+    username: root
+    password: 
+  EOS
 # Copy database.yml for distribution use
   run "cp config/database.yml config/database.yml.example"
   
 # Set up .gitignore files
   run "touch tmp/.gitignore log/.gitignore vendor/.gitignore"
   run %{find . -type d -empty | grep -v "vendor" | grep -v ".git" | grep -v "tmp" | xargs -I xxx touch xxx/.gitignore}
-  file '.gitignore', <<-END
-.DS_Store
-log/*.log
-tmp/**/*
-config/database.yml
-db/*.sqlite3
-END
+  file '.gitignore', <<-EOS.gsub(/^  /, '')
+  .DS_Store
+  log/*.log
+  tmp/**/*
+  config/database.yml
+  db/*.sqlite3
+  EOS
 
+# Commit all work so far to the repository
+  git :add => '.'
+  git :commit => "-a -m 'Initial commit'"
 
 # Set up session store initializer
   initializer 'session_store.rb', <<-END
@@ -47,7 +89,13 @@ ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + ra
 ActionController::Base.session_store = :active_record_store
   END
 
+# Set up sessions
+  rake 'db:drop:all'
+  rake 'db:create:all'
+  rake 'db:sessions:create'
+
 # Install submoduled plugins
+unless no_downloading
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
   plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
@@ -59,20 +107,19 @@ ActionController::Base.session_store = :active_record_store
 
 # Install all gems
   gem 'sqlite3-ruby', :lib => 'sqlite3'
-  if ENV['TWITTER']
+  if twitter_auth
     gem 'twitter-auth', :lib => 'twitter_auth'
   else                
     gem 'authenticated', 'User --include-activation --rspec'
   end
 
-  rake 'gems:install', :sudo => true unless ENV['SKIP_GEMS']
+  rake 'gems:install', :sudo => true unless skip_gems
 
 
-# Set up sessions, RSpec, user model, OpenID, etc, and run migrations
-  rake 'db:sessions:create'
+# Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
   generate "cucumber"
-  if ENV['TWITTER']
+  if twitter_auth
     generate "twitter_auth --oauth"
   else
     generate "authenticated", "user session"
@@ -85,6 +132,7 @@ ActionController::Base.session_store = :active_record_store
   require "email_spec/cucumber"
   require File.dirname(__FILE__) + "/../../spec/blueprints"
   EOS
+end
   
   generate 'controller', 'home index'
   generate 'controller', 'protected index'
@@ -99,7 +147,7 @@ ActionController::Base.session_store = :active_record_store
   end
   EOS
 
-  if ENV['TWITTER']
+  if twitter_auth
     file 'app/views/home/index.html.erb', <<-EOS.gsub(/^    /, '')
     <%= link_to "Protected", :controller => :protected %>
 
@@ -115,19 +163,45 @@ ActionController::Base.session_store = :active_record_store
   end
   file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
-  if ENV['TWITTER']
+  if twitter_auth
     append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
+    
+    file 'config/twitter_auth.yml', <<-EOS.gsub(/^    /, '')
+    development:
+      strategy: oauth
+      oauth_consumer_key: dev_consumer_key
+      oauth_consumer_secret: dev_consumer_secret
+      base_url: "https://twitter.com"
+      api_timeout: 10
+      remember_for: 14 # days
+      oauth_callback: "http://#{app_name}.local/oauth_callback"
+    test:
+      strategy: oauth
+      oauth_consumer_key: test_consumer_key
+      oauth_consumer_secret: test_consumer_secret
+      base_url: "https://twitter.com"
+      api_timeout: 10
+      remember_for: 14 # days
+      oauth_callback: "http://#{app_name}.local/oauth_callback"
+    production:
+      strategy: oauth
+      oauth_consumer_key: consumer_key
+      oauth_consumer_secret: consumer_secret
+      base_url: "https://twitter.com"
+      api_timeout: 10
+      remember_for: 14 # days
+      oauth_callback: "http://#{app_url}/oauth_callback"
+    EOS
   end
   
   file 'spec/blueprints.rb', ''
 
-  rake 'db:create:all'
   rake 'db:migrate'
   rake 'db:test:clone'
 
 # Routes
-  if ENV['TWITTER']
+  if twitter_auth
     route "map.login  '/login',  :controller => 'session', :action => 'new'"
     route "map.session_create  '/sessions/create',  :controller => 'session', :action => 'create'"
     route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
@@ -148,30 +222,23 @@ ActionController::Base.session_store = :active_record_store
   file 'config/deploy.rb', <<-EOS.gsub(/^  /, '')
   # REMEMBER:
   # Create github private project
-  #  $ git remote add origin git@github.com:mocra/#{File.basename(root)}.git
+  #  $ git remote add origin git@github.com:mocra/#{app_name}.git
   #  $ git push origin master
   #
   # Create DNS entry for slicehost slice:
-  #  $ slicehost-dns add #{File.basename(root)}.mocra.com
+  #  $ slicehost-dns add_cname #{domain} #{app_url} slice-name
   #
   # After you can log into remote machine (cap deploy:setup)
-  #  $ ssh #{File.basename(root)}.mocra.com -A
+  #  $ ssh #{app_url} -A
   #  # ssh git@github.com
   #  => 'yes'
   #  Hi drnic! You've successfully authenticated, but GitHub does not provide shell access.
-  #
-  # database.yml
-  # * Remove mysql socket entryfor production
-  #
-  # twitter_auth.yml
-  # * production: use #{File.basename(root)}.mocra.com
-  # * others: use #{File.basename(root)}.local
   
   
   require 'deprec'
 
-  set :application, "#{File.basename(root)}"
-  set :domain,      "\#{application}.mocra.com"
+  set :application, "#{app_name}"
+  set :domain,      "\#{application}.#{domain}"
   set :repository,  "git@github.com:mocra/\#{application}.git"
 
   # If you aren't using Subversion to manage your source code, specify
@@ -222,11 +289,12 @@ ActionController::Base.session_store = :active_record_store
 
 # Commit all work so far to the repository
   git :add => '.'
-  git :commit => "-a -m 'Initial commit'"
+  git :commit => "-a -m 'Plugins and config'"
 
-  if ENV['TWITTER']
+  if twitter_auth
     puts "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
     `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
+    # `open http://#{app_url}`
   end
   
 # Success!
