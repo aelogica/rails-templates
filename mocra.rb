@@ -17,29 +17,32 @@
   skip_gems      = ENV['SKIP_GEMS']
   twitter_auth   = ENV['TWITTER']
 
-# Tools for the script
-require "highline"
-
 def highline
-  @highline ||= HighLine.new
+  @highline ||= begin
+    require "highline"
+    HighLine.new
+  end
 end
 
 def parse_keys(message)
   {
-    :key    => message.match(/Consumer key:\s+(.*)/)[1],
-    :secret => message.match(/Consumer secret:\s+(.*)/)[1]
+    :key    => (message.match(/Consumer key:\s+(.*)/)[1] rescue "TWITTER_CONSUMERKEY"),
+    :secret => (message.match(/Consumer secret:\s+(.*)/)[1] rescue "TWITTER_CONSUMERSECRET")
   }
 end
 
-def run_template
-  yield unless ENV['NO_RUN']
+def template(&block)
+  @store_template = block
 end
 
-run_template do
+def run_template
+  @store_template.call
+end
+
+template do
 
 # Twitter app registation
 if twitter_auth
-  
   # requires: 
   # * sudo gem install twitter (need drnic version with register_oauth command)
   # * twitter install
@@ -48,16 +51,9 @@ if twitter_auth
   twitter_user = highline.choose(*twitter_users) do |menu|
     menu.prompt = "Which twitter user?  "
   end
-  keys = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
-  # keys:
-  # success:
-  # "Nice! You've registered your application successfully.\nConsumer key:    BYaEuNzZgVnMkYxFhF9mg\nConsumer secret: D9f0tpR03ABPYnuyEIfM21kUNn3lJTKo3RLPnztfQ\n"
-  # failure:
-  # "Unable to register this application. Check your registration settings.\n* Name has already been taken\n"
+  message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+  twitter_auth_keys = parse_keys(message)
 end
-
-# Link to local copy of edge rails
-  # inside('vendor') { run 'ln -s ~/dev/rails/rails rails' }
 
 # Delete unnecessary files
   run "rm README"
@@ -65,6 +61,7 @@ end
   run "rm public/favicon.ico"
   run "rm public/robots.txt"
   run "rm -f public/javascripts/*"
+  run "rm -rf test"
 
 # Download JQuery
 unless no_downloading
@@ -336,12 +333,14 @@ end
   git :commit => "-a -m 'Plugins and config'"
 
   if twitter_auth
-    puts "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
-    `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
+    log "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
+    # `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
     # `open http://#{app_url}`
   end
   
 # Success!
-  puts "SUCCESS!"
+  log "SUCCESS!"
 
 end
+
+run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
