@@ -267,12 +267,6 @@ end
   #  $ git remote add origin git@github.com:mocra/#{app_name}.git
   #  $ git push origin master
   #
-  # After you can log into remote machine (cap deploy:setup)
-  #  $ ssh #{app_url} -A
-  #  # ssh git@github.com
-  #  => 'yes'
-  #  Hi drnic! You've successfully authenticated, but GitHub does not provide shell access.
-  #
   
   require 'deprec'
 
@@ -302,6 +296,7 @@ end
   set :deploy_to, "/opt/apps/\#{application}"
 
   before 'deploy:cold', 'deploy:upload_database_yml'
+  before 'deploy:cold', 'deploy:ping_ssh_github'
   after 'deploy:symlink', 'deploy:create_symlinks'
 
   namespace :deploy do
@@ -318,6 +313,11 @@ end
     task :create_symlinks, :roles => :app do
       run "rm -f \#{current_path}/config/database.yml"
       run "ln -s \#{shared_path}/config/database.yml \#{current_path}/config/database.yml"
+    end
+
+    desc "ssh git@github.com"
+    task :ping_ssh_github do
+      run 'ssh -o "StrictHostKeyChecking no" git@github.com || true'
     end
   end
   EOS
