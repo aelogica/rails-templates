@@ -43,7 +43,7 @@ describe "template_runner" do
     end
     describe "run template" do
       before(:each) do
-        @runner.highline.should_receive(:choose).and_return("drnic")
+        @runner.highline.should_receive(:choose).twice.and_return("drnic", "mocra-primary")
         @runner.on_command(:run, "twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
           <<-EOS.gsub(/^          /, '')
           Nice! You've registered your application successfully.
@@ -51,6 +51,11 @@ describe "template_runner" do
           Consumer secret: CONSUMERSECRET
           EOS
         end
+        @runner.should_receive(:slices_name_and_ip).ordered.and_return({
+          'mocra-primary' => '123.123.123.123',
+          'mocra-secondary' => '65.65.65.65'
+        })
+
         @runner.run_template
         @log = @runner.full_log
       end
@@ -60,6 +65,7 @@ describe "template_runner" do
       it { @runner.files['config/twitter_auth.yml'].should_not be_nil }
       it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY} }
       it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
+      it { @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}}
     end
   end
 end

@@ -41,20 +41,6 @@ end
 
 template do
 
-# Twitter app registation
-if twitter_auth
-  # requires: 
-  # * sudo gem install twitter (need drnic version with register_oauth command)
-  # * twitter install
-  # * twitter add
-  twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
-  twitter_user = highline.choose(*twitter_users) do |menu|
-    menu.prompt = "Which twitter user?  "
-  end
-  message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
-  twitter_auth_keys = parse_keys(message)
-end
-
 # select slice + add CNAME
 
 # github private repo + add self as collaborator if != github user
@@ -207,6 +193,19 @@ end
   file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
   if twitter_auth
+    # Twitter app registation
+
+    # requires: 
+    # * sudo gem install twitter (need drnic version with register_oauth command)
+    # * twitter install
+    # * twitter add
+    twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
+    twitter_user = highline.choose(*twitter_users) do |menu|
+      menu.prompt = "Which twitter user?  "
+    end
+    message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+    twitter_auth_keys = parse_keys(message)
+
     append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     
@@ -268,18 +267,12 @@ end
   #  $ git remote add origin git@github.com:mocra/#{app_name}.git
   #  $ git push origin master
   #
-  # Create DNS entry for slicehost slice:
-  #  $ slicehost-dns add_cname #{domain} #{app_url} slice-name
-  #
   # After you can log into remote machine (cap deploy:setup)
   #  $ ssh #{app_url} -A
   #  # ssh git@github.com
   #  => 'yes'
   #  Hi drnic! You've successfully authenticated, but GitHub does not provide shell access.
   #
-  # twitter_auth
-  # * register twitter app http://twitter.com/oauth_clients
-  # * copy keys into twitter_auth.yml
   
   require 'deprec'
 
@@ -336,6 +329,14 @@ end
 # Commit all work so far to the repository
   git :add => '.'
   git :commit => "-a -m 'Plugins and config'"
+
+# Setup slicehost slice
+
+  slices = slices_name_and_ip
+  slice_name = highline.choose(slices.keys.sort) do |menu|
+    menu.prompt = "Install application on which slice?  "
+  end
+  run "slicehost-dns add_cname #{domain} #{app_name} #{slice_name}"
 
   if twitter_auth
     log "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
