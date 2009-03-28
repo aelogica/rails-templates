@@ -4,6 +4,17 @@ describe "template_runner" do
   before(:each) do
     setup_template_runner
   end
+  describe "slicehost" do
+    before(:each) do
+      @runner.on_command(:run, "slicehost-slice list") do
+        <<-EOS.gsub(/^          /, '')
+        + mocra-primary (123.123.123.123)
+        + mocra-secondary (65.65.65.65)
+        EOS
+      end
+    end
+    it { @runner.slice_names.should == %w[mocra-primary mocra-secondary]}
+  end
   describe "twitter" do
     before(:each) do
       ENV['TWITTER'] = '1'
@@ -51,10 +62,12 @@ describe "template_runner" do
           Consumer secret: CONSUMERSECRET
           EOS
         end
-        @runner.should_receive(:slices_name_and_ip).ordered.and_return({
-          'mocra-primary' => '123.123.123.123',
-          'mocra-secondary' => '65.65.65.65'
-        })
+        @runner.on_command(:run, "slicehost-slice list") do
+          <<-EOS.gsub(/^          /, '')
+          + mocra-primary (123.123.123.123)
+          + mocra-secondary (65.65.65.65)
+          EOS
+        end
 
         @runner.run_template
         @log = @runner.full_log
@@ -67,6 +80,8 @@ describe "template_runner" do
       it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
       it { @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}}
       it { @log.should =~ %r{executing  github create-from-local} }
+      it { @log.should =~ %r{executing  cap deploy:setup} }
+      it { @log.should =~ %r{executing  cap deploy:cold} }
     end
   end
 end

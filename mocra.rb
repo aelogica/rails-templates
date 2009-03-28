@@ -5,7 +5,16 @@
 #  TWITTER=1    - install + setup twitter_auth instead of restful_authentication
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #
-# based on daring.rb from Peter Cooper
+# Development gems that you need + installation:
+#  gem install uhlenbrock-slicehost-tools --source=http://gems.github.com
+#  slicehost-slice
+#  -> enter your slicehost API key (you'll need to enable API to see your key)
+#  gem install twitter
+#  twitter install
+#  twitter add
+#  -> enter username + password; repeat if you have multiple twitter accounts
+#  gem install highline
+#  gem install capistrano
 
 # Useful variables
   app_name       = File.basename(root)
@@ -39,13 +48,39 @@ def run_template
   @store_template.call
 end
 
+def slice_names
+  slicehost_list = run "slicehost-slice list"
+  slicehost_list.split("\n").map { |name_ip| name_ip.match(/\+\s+([^\s]+)\s/)[1] }
+end
+
 template do
 
-# select slice + add CNAME
+# Setup slicehost slice
 
-# github private repo + add self as collaborator if != github user
+  slice_name = highline.choose(*slice_names.sort) do |menu|
+    menu.prompt = "Install application on which slice?  "
+  end
+  run "slicehost-dns add_cname #{domain} #{app_name} #{slice_name}"
 
-# cap: run 'ssh -o "StrictHostKeyChecking no" git@github.com'
+# Setup twitter oauth on twitter.com
+  if twitter_auth
+    twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
+    twitter_user = highline.choose(*twitter_users) do |menu|
+      menu.prompt = "Which twitter user?  "
+    end
+    message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+    twitter_auth_keys = parse_keys(message)
+  end
+  
+# Install all gems
+  gem 'sqlite3-ruby', :lib => 'sqlite3'
+  if twitter_auth
+    gem 'twitter-auth', :lib => 'twitter_auth'
+  else                
+    gem 'authenticated', 'User --include-activation --rspec'
+  end
+
+  rake 'gems:install', :sudo => true unless skip_gems
 
 # Delete unnecessary files
   run "rm README"
@@ -119,7 +154,6 @@ ActionController::Base.session_store = :active_record_store
   END
 
 # Set up sessions
-  rake 'db:drop:all'
   rake 'db:create:all'
   rake 'db:sessions:create'
 
@@ -133,16 +167,6 @@ unless no_downloading
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
   plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
-
-# Install all gems
-  gem 'sqlite3-ruby', :lib => 'sqlite3'
-  if twitter_auth
-    gem 'twitter-auth', :lib => 'twitter_auth'
-  else                
-    gem 'authenticated', 'User --include-activation --rspec'
-  end
-
-  rake 'gems:install', :sudo => true unless skip_gems
 
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
@@ -193,19 +217,6 @@ end
   file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
   if twitter_auth
-    # Twitter app registation
-
-    # requires: 
-    # * sudo gem install twitter (need drnic version with register_oauth command)
-    # * twitter install
-    # * twitter add
-    twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
-    twitter_user = highline.choose(*twitter_users) do |menu|
-      menu.prompt = "Which twitter user?  "
-    end
-    message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
-    twitter_auth_keys = parse_keys(message)
-
     append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     
@@ -334,19 +345,11 @@ end
 # GitHub project creation
   run 'github create-from-local'
 
-# Setup slicehost slice
+# Deploy!
 
-  slices = slices_name_and_ip
-  slice_name = highline.choose(slices.keys.sort) do |menu|
-    menu.prompt = "Install application on which slice?  "
-  end
-  run "slicehost-dns add_cname #{domain} #{app_name} #{slice_name}"
+  run "cap deploy:setup"
+  run "cap deploy:cold"
 
-  if twitter_auth
-    log "The next step is to edit config/twitter_auth.yml to reflect our OAuth client key and secret (to register your application log in to Twitter and visit http://twitter.com/oauth_clients)."
-    # `open http://intridea.com/2009/3/23/twitter-auth-for-near-instant-twitter-apps`
-    # `open http://#{app_url}`
-  end
   
 # Success!
   log "SUCCESS!"
