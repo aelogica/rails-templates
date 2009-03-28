@@ -73,9 +73,11 @@ module Rails
     def git(command = {})
       if command.is_a?(Symbol)
         log 'running', "git #{command}"
+        return run_command(:git, command)
       else
         command.each do |command, options|
           log 'running', "git #{command} #{options}"
+          return run_command(:git, "#{command} #{options}")
         end
       end
     end

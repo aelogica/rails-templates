@@ -15,12 +15,13 @@
 #  -> enter username + password; repeat if you have multiple twitter accounts
 #  gem install highline
 #  gem install capistrano
+#  gem install defunkt-github  --source=http://gems.github.com
 
 # Useful variables
   app_name       = File.basename(root)
-  domain         = "mocra.com"
+  domain         = ENV['DOMAIN'] || 'mocra.com'
   app_url        = "#{app_name.gsub(/_/, '-')}.#{domain}"
-  organization   = "Mocra"
+  organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
   skip_gems      = ENV['SKIP_GEMS']
   twitter_auth   = ENV['TWITTER']
@@ -53,6 +54,7 @@ def slice_names
 end
 
 template do
+  github_user = run("git config --get github.user").strip
 
 # Setup slicehost slice
 
@@ -271,7 +273,7 @@ ActionController::Base.session_store = :active_record_store
   file 'config/deploy.rb', <<-EOS.gsub(/^  /, '')
   # REMEMBER:
   # Create github private project
-  #  $ git remote add origin git@github.com:mocra/#{app_name}.git
+  #  $ git remote add origin git@github.com:#{github_user}/#{app_name}.git
   #  $ git push origin master
   #
   
@@ -279,8 +281,8 @@ ActionController::Base.session_store = :active_record_store
 
   set :application, "#{app_name}"
   set :domain,      "\#{application}.#{domain}"
-  set :repository,  "git://github.com/mocra/\#{application}.git"
-  # set :repository,  "git@github.com:mocra/\#{application}.git"
+  set :repository,  "git://github.com/#{github_user}/\#{application}.git"
+  # set :repository,  "git@github.com:#{github_user}/\#{application}.git"
 
   # If you aren't using Subversion to manage your source code, specify
   # your SCM below:

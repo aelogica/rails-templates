@@ -54,7 +54,7 @@ describe "template_runner" do
     end
     describe "run template" do
       before(:each) do
-        @runner.highline.should_receive(:choose).twice.and_return("drnic", "mocra-primary")
+        @runner.highline.should_receive(:choose).twice.and_return("mocra-primary", "drnic")
         @runner.on_command(:run, "twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
           <<-EOS.gsub(/^          /, '')
           Nice! You've registered your application successfully.
@@ -68,6 +68,7 @@ describe "template_runner" do
           + mocra-secondary (65.65.65.65)
           EOS
         end
+        @runner.on_command(:run, "git config --get github.user") { "github_person\n" }
 
         @runner.run_template
         @log = @runner.full_log
@@ -82,6 +83,7 @@ describe "template_runner" do
       it { @log.should =~ %r{executing  github create-from-local} }
       it { @log.should =~ %r{executing  cap deploy:setup} }
       it { @log.should =~ %r{executing  cap deploy:cold} }
+      it { @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}}
     end
   end
 end
