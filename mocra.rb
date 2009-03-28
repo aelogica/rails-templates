@@ -5,19 +5,18 @@
 #  TWITTER=1    - install + setup twitter_auth instead of restful_authentication
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #
-# Development gems that you need + installation:
-#  gem install uhlenbrock-slicehost-tools --source=http://gems.github.com
-#  slicehost-slice
-#  -> enter your slicehost API key (you'll need to enable API to see your key)
-#  gem install twitter
+# Some setup steps (if wanting twitter_auth support)
 #  twitter install
 #  twitter add
 #  -> enter username + password; repeat if you have multiple twitter accounts
-#  gem install highline
-#  gem install capistrano
-#  gem install defunkt-github  --source=http://gems.github.com
 
-# Useful variables
+# wrap template commands in block so their execution can be controlled
+# in unit testing
+def template(&block)
+  @store_template = block
+end
+
+template do
   app_name       = File.basename(root)
   domain         = ENV['DOMAIN'] || 'mocra.com'
   app_url        = "#{app_name.gsub(/_/, '-')}.#{domain}"
@@ -26,35 +25,21 @@
   skip_gems      = ENV['SKIP_GEMS']
   twitter_auth   = ENV['TWITTER']
 
-def highline
-  @highline ||= begin
-    require "highline"
-    HighLine.new
-  end
-end
-
-def parse_keys(message)
-  {
-    :key    => (message.match(/Consumer key:\s+(.*)/)[1] rescue "TWITTER_CONSUMERKEY"),
-    :secret => (message.match(/Consumer secret:\s+(.*)/)[1] rescue "TWITTER_CONSUMERSECRET")
-  }
-end
-
-def template(&block)
-  @store_template = block
-end
-
-def run_template
-  @store_template.call
-end
-
-def slice_names
-  slicehost_list = run "slicehost-slice list"
-  slicehost_list.split("\n").map { |name_ip| name_ip.match(/\+\s+([^\s]+)\s/)[1] }
-end
-
-template do
   github_user = run("git config --get github.user").strip
+
+# Install all gems (some are just required for this template)
+  gem 'highline'
+  gem 'deprec'
+  gem 'defunkt-github', :source => 'http://gems.github.com'
+  gem 'uhlenbrock-slicehost-tools', :source => 'http://gems.github.com'
+  if twitter_auth
+    gem 'twitter'
+    gem 'twitter-auth', :lib => 'twitter_auth'
+  else                
+    gem 'authenticated', 'User --include-activation --rspec'
+  end
+
+  rake 'gems:install', :sudo => true unless skip_gems
 
 # Setup slicehost slice
 
@@ -73,16 +58,6 @@ template do
     twitter_auth_keys = parse_keys(message)
   end
   
-# Install all gems
-  gem 'sqlite3-ruby', :lib => 'sqlite3'
-  if twitter_auth
-    gem 'twitter-auth', :lib => 'twitter_auth'
-  else                
-    gem 'authenticated', 'User --include-activation --rspec'
-  end
-
-  rake 'gems:install', :sudo => true unless skip_gems
-
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -353,6 +328,29 @@ ActionController::Base.session_store = :active_record_store
 # Success!
   log "SUCCESS!"
 
+end
+
+def highline
+  @highline ||= begin
+    require "highline"
+    HighLine.new
+  end
+end
+
+def parse_keys(message)
+  {
+    :key    => (message.match(/Consumer key:\s+(.*)/)[1] rescue "TWITTER_CONSUMERKEY"),
+    :secret => (message.match(/Consumer secret:\s+(.*)/)[1] rescue "TWITTER_CONSUMERSECRET")
+  }
+end
+
+def run_template
+  @store_template.call
+end
+
+def slice_names
+  slicehost_list = run "slicehost-slice list"
+  slicehost_list.split("\n").map { |name_ip| name_ip.match(/\+\s+([^\s]+)\s/)[1] }
 end
 
 run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
