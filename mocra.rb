@@ -22,7 +22,6 @@
   app_url        = "#{app_name.gsub(/_/, '-')}.#{domain}"
   organization   = "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
-  no_downloading = ENV['NO_DOWNLOADING']
   skip_gems      = ENV['SKIP_GEMS']
   twitter_auth   = ENV['TWITTER']
 
@@ -91,11 +90,10 @@ template do
   run "rm -rf test"
 
 # Download JQuery
-unless no_downloading
   run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
   run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
   run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
-end
+
 # Set up git repository
   git :init
   git :add => '.'
@@ -158,7 +156,6 @@ ActionController::Base.session_store = :active_record_store
   rake 'db:sessions:create'
 
 # Install submoduled plugins
-unless no_downloading
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
   plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
@@ -185,7 +182,6 @@ unless no_downloading
   require "email_spec/cucumber"
   require File.dirname(__FILE__) + "/../../spec/blueprints"
   EOS
-end
   
   generate 'controller', 'home index'
   generate 'controller', 'protected index'
