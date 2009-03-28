@@ -74,16 +74,18 @@ describe "template_runner" do
         @log = @runner.full_log
       end
       
-      it { @log.should =~ %r{file  config/deploy.rb} }
-      it { @log.should =~ %r{executing  twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com} }
-      it { @runner.files['config/twitter_auth.yml'].should_not be_nil }
-      it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY} }
-      it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
-      it { @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}}
-      it { @log.should =~ %r{executing  github create-from-local} }
-      it { @log.should =~ %r{executing  cap deploy:setup} }
-      it { @log.should =~ %r{executing  cap deploy:cold} }
-      it { @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}}
+      it "should check various things" do
+        @log.should =~ %r{file  config/deploy.rb}
+        @log.should =~ %r{executing  twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com}
+        @runner.files['config/twitter_auth.yml'].should_not be_nil
+        @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY}
+        @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET}
+        @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
+        @log.should =~ %r{executing  github create-from-local}
+        @log.should =~ %r{executing  cap deploy:setup}
+        @log.should =~ %r{executing  cap deploy:cold}
+        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
+      end
     end
   end
 end
