@@ -2,7 +2,7 @@
 # from Dr Nic Williams @ http://#{domain} + http://drnicwilliams.com
 # 
 # Optional:
-#  TWITTER=1    - install + setup twitter_auth instead of restful_authentication
+#  AUTH=twitter - install + setup twitter_auth instead of restful_authentication
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #
 # Some setup steps (if wanting twitter_auth support)
@@ -23,7 +23,7 @@ template do
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
   skip_gems      = ENV['SKIP_GEMS']
-  twitter_auth   = ENV['TWITTER']
+  twitter_auth   = ENV['AUTH'] == 'twitter'
 
   github_user = run("git config --get github.user").strip
 

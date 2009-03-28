@@ -48,7 +48,7 @@ describe "template_runner" do
   end
   describe "twitter" do
     before(:each) do
-      ENV['TWITTER'] = '1'
+      ENV['AUTH'] = 'twitter'
     end
     describe "register_oauth" do
       describe "success" do
