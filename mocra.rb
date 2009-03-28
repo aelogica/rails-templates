@@ -299,6 +299,7 @@ ActionController::Base.session_store = :active_record_store
   # Update these if you're not running everything on one host.
   role :app, domain
   role :web, domain
+  role :db, domain, :primary => true
 
   # If you aren't deploying to /opt/apps/\#{application} on the target
   # servers (which is the deprec default), you can specify the actual location
