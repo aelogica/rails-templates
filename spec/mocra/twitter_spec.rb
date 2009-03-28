@@ -15,11 +15,42 @@ describe "template_runner" do
     end
     it { @runner.slice_names.should == %w[mocra-primary mocra-secondary]}
   end
+  describe "restful_authentication" do
+    before(:each) do
+      # default to restful_authentication
+    end
+    describe "run template" do
+      before(:each) do
+        @runner.highline.should_receive(:choose).once.and_return("mocra-primary")
+        @runner.on_command(:run, "slicehost-slice list") do
+          <<-EOS.gsub(/^          /, '')
+          + mocra-primary (123.123.123.123)
+          + mocra-secondary (65.65.65.65)
+          EOS
+        end
+        @runner.on_command(:run, "git config --get github.user") { "github_person\n" }
+
+        @runner.run_template
+        @log = @runner.full_log
+      end
+      
+      it "should check various things" do
+        @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
+        @log.should_not =~ %r{executing  twitter register_oauth}
+        @runner.files['config/twitter_auth.yml'].should be_nil
+        @log.should =~ %r{file  config/deploy.rb}
+        @log.should =~ %r{executing  cap deploy:setup}
+        @log.should =~ %r{executing  cap deploy:cold}
+        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
+        @log.should =~ %r{executing  github create-from-local}
+      end
+    end
+  end
   describe "twitter" do
     before(:each) do
       ENV['TWITTER'] = '1'
     end
-    describe "regiester_oauth" do
+    describe "register_oauth" do
       describe "success" do
         before(:each) do
           @message = <<-EOS.gsub(/^        /, '')
@@ -75,16 +106,16 @@ describe "template_runner" do
       end
       
       it "should check various things" do
-        @log.should =~ %r{file  config/deploy.rb}
+        @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
         @log.should =~ %r{executing  twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com}
         @runner.files['config/twitter_auth.yml'].should_not be_nil
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY}
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET}
-        @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
-        @log.should =~ %r{executing  github create-from-local}
+        @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
         @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
+        @log.should =~ %r{executing  github create-from-local}
       end
     end
   end

@@ -58,7 +58,7 @@ template do
 
 # Setup slicehost slice
 
-  slice_name = highline.choose(*slice_names.sort) do |menu|
+  slice_name = highline.choose(*slice_names) do |menu|
     menu.prompt = "Install application on which slice?  "
   end
   run "slicehost-dns add_cname #{domain} #{app_name} #{slice_name}"
