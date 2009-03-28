@@ -272,7 +272,8 @@ end
 
   set :application, "#{app_name}"
   set :domain,      "\#{application}.#{domain}"
-  set :repository,  "git@github.com:mocra/\#{application}.git"
+  set :repository,  "git://github.com/mocra/\#{application}.git"
+  # set :repository,  "git@github.com:mocra/\#{application}.git"
 
   # If you aren't using Subversion to manage your source code, specify
   # your SCM below:
@@ -329,6 +330,9 @@ end
 # Commit all work so far to the repository
   git :add => '.'
   git :commit => "-a -m 'Plugins and config'"
+
+# GitHub project creation
+  run 'github create-from-local'
 
 # Setup slicehost slice
 

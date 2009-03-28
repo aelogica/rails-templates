@@ -66,6 +66,7 @@ describe "template_runner" do
       it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY} }
       it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
       it { @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}}
+      it { @log.should =~ %r{executing  github create-from-local} }
     end
   end
 end
