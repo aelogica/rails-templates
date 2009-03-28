@@ -1,5 +1,5 @@
 require 'spec'
-require File.dirname(__FILE__) + "/../template_runner"
+require File.dirname(__FILE__) + "/template_runner"
 
 Spec::Runner.configure do |config|
   # == Mock Framework
@@ -14,10 +14,4 @@ Spec::Runner.configure do |config|
   # == Notes
   # 
   # For more information take a look at Spec::Runner::Configuration and Spec::Runner
-end
-
-def setup_template_runner
-  ENV['TEST_MODE'] = '1'
-  @template = File.dirname(__FILE__) + "/../../mocra.rb"
-  @runner = Rails::TemplateRunner.new(@template)
 end
