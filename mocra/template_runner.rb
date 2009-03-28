@@ -2,7 +2,7 @@ require "active_support"
 
 module Rails
   class TemplateRunner
-    attr_reader :root
+    attr_reader :root, :files
     attr_writer :logger
 
     def initialize(template, root = '') # :nodoc:
@@ -34,8 +34,10 @@ module Rails
     #
     def file(filename, data = nil, log_action = true, &block)
       log 'file', filename if log_action
+      @files ||= {}
+      @files[filename] = data
     end
-
+    
     # Install a plugin.  You must provide either a Subversion url or Git url.
     # For a Git-hosted plugin, you can specify if it should be added as a submodule instead of cloned.
     #

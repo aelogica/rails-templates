@@ -55,6 +55,12 @@ if twitter_auth
   twitter_auth_keys = parse_keys(message)
 end
 
+# select slice + add CNAME
+
+# github private repo + add self as collaborator if != github user
+
+# cap: run 'ssh -o "StrictHostKeyChecking no" git@github.com'
+
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -207,24 +213,24 @@ end
     file 'config/twitter_auth.yml', <<-EOS.gsub(/^    /, '')
     development:
       strategy: oauth
-      oauth_consumer_key: dev_consumer_key
-      oauth_consumer_secret: dev_consumer_secret
+      oauth_consumer_key: #{twitter_auth_keys[:key]}
+      oauth_consumer_secret: #{twitter_auth_keys[:secret]}
       base_url: "https://twitter.com"
       api_timeout: 10
       remember_for: 14 # days
       oauth_callback: "http://#{app_name}.local/oauth_callback"
     test:
       strategy: oauth
-      oauth_consumer_key: test_consumer_key
-      oauth_consumer_secret: test_consumer_secret
+      oauth_consumer_key: #{twitter_auth_keys[:key]}
+      oauth_consumer_secret: #{twitter_auth_keys[:secret]}
       base_url: "https://twitter.com"
       api_timeout: 10
       remember_for: 14 # days
       oauth_callback: "http://#{app_name}.local/oauth_callback"
     production:
       strategy: oauth
-      oauth_consumer_key: consumer_key
-      oauth_consumer_secret: consumer_secret
+      oauth_consumer_key: #{twitter_auth_keys[:key]}
+      oauth_consumer_secret: #{twitter_auth_keys[:secret]}
       base_url: "https://twitter.com"
       api_timeout: 10
       remember_for: 14 # days

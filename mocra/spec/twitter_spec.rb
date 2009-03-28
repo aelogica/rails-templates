@@ -57,8 +57,9 @@ describe "template_runner" do
       
       it { @log.should =~ %r{file  config/deploy.rb} }
       it { @log.should =~ %r{executing  twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com} }
-      it { @log.should =~ %r{oauth_consumer_key: CONSUMERKEY} }
-      it { @log.should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
+      it { @runner.files['config/twitter_auth.yml'].should_not be_nil }
+      it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY} }
+      it { @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET} }
     end
   end
 end
