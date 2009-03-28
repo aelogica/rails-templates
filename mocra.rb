@@ -114,7 +114,6 @@ end
   log/*.log
   tmp/**/*
   config/database.yml
-  db/*.sqlite3
   EOS
 
 # Commit all work so far to the repository
