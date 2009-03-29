@@ -23,7 +23,6 @@ template do
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
   skip_gems      = ENV['SKIP_GEMS']
-  twitter_auth   = ENV['AUTH'] == 'twitter'
 
   github_user = run("git config --get github.user").strip
 
@@ -31,6 +30,15 @@ template do
   gem 'highline'
   gem 'deprec'
   gem 'defunkt-github', :source => 'http://gems.github.com'
+
+  rake 'gems:install', :sudo => true unless skip_gems
+
+# Authentication selection
+  auth = highline.choose(*%w[restful_authentication twitter_auth]) do |menu|
+    menu.prompt = "Which user authentication system?  "
+  end
+  twitter_auth = auth == "twitter_auth"
+
   gem 'uhlenbrock-slicehost-tools', :source => 'http://gems.github.com'
   if twitter_auth
     gem 'twitter'

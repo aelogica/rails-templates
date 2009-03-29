@@ -16,12 +16,9 @@ describe "template_runner" do
     it { @runner.slice_names.should == %w[mocra-primary mocra-secondary]}
   end
   describe "restful_authentication" do
-    before(:each) do
-      # default to restful_authentication
-    end
     describe "run template" do
       before(:each) do
-        @runner.highline.should_receive(:choose).once.and_return("mocra-primary")
+        @runner.highline.should_receive(:choose).exactly(2).and_return("restful_authentication", "mocra-primary")
         @runner.on_command(:run, "slicehost-slice list") do
           <<-EOS.gsub(/^          /, '')
           + mocra-primary (123.123.123.123)
@@ -47,9 +44,6 @@ describe "template_runner" do
     end
   end
   describe "twitter" do
-    before(:each) do
-      ENV['AUTH'] = 'twitter'
-    end
     describe "register_oauth" do
       describe "success" do
         before(:each) do
@@ -85,7 +79,7 @@ describe "template_runner" do
     end
     describe "run template" do
       before(:each) do
-        @runner.highline.should_receive(:choose).twice.and_return("mocra-primary", "drnic")
+        @runner.highline.should_receive(:choose).exactly(3).and_return("twitter_auth", "mocra-primary", "drnic")
         @runner.on_command(:run, "twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
           <<-EOS.gsub(/^          /, '')
           Nice! You've registered your application successfully.
