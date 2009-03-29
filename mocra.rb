@@ -18,20 +18,28 @@ end
 
 template do
   app_name       = File.basename(root)
+  app_subdomain  = app_name.gsub(/_/, '-')
   domain         = ENV['DOMAIN'] || 'mocra.com'
-  app_url        = "#{app_name.gsub(/_/, '-')}.#{domain}"
+  app_url        = "#{app_subdomain}.#{domain}"
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
   skip_gems      = ENV['SKIP_GEMS']
 
   github_user = run("git config --get github.user").strip
 
-# Install all gems (some are just required for this template)
-  gem 'highline'
-  gem 'deprec'
-  gem 'defunkt-github', :source => 'http://gems.github.com'
+# Set up git repository
+  git :init
+  git :add => '.'
 
-  rake 'gems:install', :sudo => true unless skip_gems
+# Install all gems (some are just required for this template)
+  # gem 'highline'
+  # gem 'capistrano'
+  # gem 'deprec'
+  # gem 'defunkt-github', :source => 'http://gems.github.com'
+  # gem 'uhlenbrock-slicehost-tools', :source => 'http://gems.github.com'
+  # gem 'twitter'
+  # 
+  # rake 'gems:install', :sudo => true unless skip_gems
 
 # Authentication selection
   auth = highline.choose(*%w[restful_authentication twitter_auth]) do |menu|
@@ -39,22 +47,12 @@ template do
   end
   twitter_auth = auth == "twitter_auth"
 
-  gem 'uhlenbrock-slicehost-tools', :source => 'http://gems.github.com'
-  if twitter_auth
-    gem 'twitter'
-    gem 'twitter-auth', :lib => 'twitter_auth'
-  else                
-    gem 'authenticated', 'User --include-activation --rspec'
-  end
-
-  rake 'gems:install', :sudo => true unless skip_gems
-
 # Setup slicehost slice
 
   slice_name = highline.choose(*slice_names) do |menu|
-    menu.prompt = "Install application on which slice?  "
+    menu.prompt = "Install http://#{app_url} application on which slice?  "
   end
-  run "slicehost-dns add_cname #{domain} #{app_name} #{slice_name}"
+  run "slicehost-dns add_cname #{domain} #{app_subdomain} #{slice_name}"
 
 # Setup twitter oauth on twitter.com
   if twitter_auth
@@ -65,6 +63,17 @@ template do
     message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
     twitter_auth_keys = parse_keys(message)
   end
+
+# Authentication gems/plugins
+
+if twitter_auth
+  gem 'twitter-auth', :lib => 'twitter_auth'
+else
+  plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
+end
+
+rake 'gems:install', :sudo => true unless skip_gems
+
   
 # Delete unnecessary files
   run "rm README"
@@ -79,9 +88,6 @@ template do
   run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
   run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
 
-# Set up git repository
-  git :init
-  git :add => '.'
   
   file 'config/database.yml', <<-EOS.gsub(/^  /, '')
   development:
@@ -141,23 +147,26 @@ ActionController::Base.session_store = :active_record_store
   rake 'db:sessions:create'
 
 # Install submoduled plugins
-  plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
-  plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
   plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
   plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git', :submodule => true
   plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
-  plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
+
+  # TODO something broken with rspec install
+  # plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
+  # plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
+  # plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
 
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
-  generate "rspec"
+  # generate "rspec"
   generate "cucumber"
   if twitter_auth
     generate "twitter_auth --oauth"
   else
-    generate "authenticated", "user session"
+    # generate 'authenticated', 'user session --include-activation --rspec'
+    generate 'authenticated', 'user session --include-activation'
   end
   generate 'app_layout' rescue nil
 
@@ -209,7 +218,7 @@ ActionController::Base.session_store = :active_record_store
       base_url: "https://twitter.com"
       api_timeout: 10
       remember_for: 14 # days
-      oauth_callback: "http://#{app_name}.local/oauth_callback"
+      oauth_callback: "http://#{app_subdomain}.local/oauth_callback"
     test:
       strategy: oauth
       oauth_consumer_key: #{twitter_auth_keys[:key]}
@@ -217,7 +226,7 @@ ActionController::Base.session_store = :active_record_store
       base_url: "https://twitter.com"
       api_timeout: 10
       remember_for: 14 # days
-      oauth_callback: "http://#{app_name}.local/oauth_callback"
+      oauth_callback: "http://#{app_subdomain}.local/oauth_callback"
     production:
       strategy: oauth
       oauth_consumer_key: #{twitter_auth_keys[:key]}
@@ -263,7 +272,7 @@ ActionController::Base.session_store = :active_record_store
   require 'deprec'
 
   set :application, "#{app_name}"
-  set :domain,      "\#{application}.#{domain}"
+  set :domain,      "#{app_subdomain}.#{domain}"
   set :repository,  "git://github.com/#{github_user}/\#{application}.git"
   # set :repository,  "git@github.com:#{github_user}/\#{application}.git"
 
