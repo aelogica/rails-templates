@@ -165,7 +165,7 @@ ActionController::Base.session_store = :active_record_store
 # Install submoduled plugins
   plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
   plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git', :submodule => true
-  plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
+  plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git', :submodule => true
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
   plugin 'cucumber', :git => 'git://github.com/aslakhellesoy/cucumber.git', :submodule => true
@@ -192,8 +192,8 @@ ActionController::Base.session_store = :active_record_store
   require File.dirname(__FILE__) + "/../../spec/blueprints"
   EOS
   
-  generate 'controller', 'home index'
-  generate 'controller', 'protected index'
+  generate 'rspec_controller', 'home index'
+  generate 'rspec_controller', 'protected index'
 
   file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
   class ProtectedController < ApplicationController
