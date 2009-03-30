@@ -384,7 +384,7 @@ ActionController::Base.session_store = :active_record_store
   git :push => 'origin master'
 
 # Success!
-  log "SUCCESS!"
+  log "SUCCESS! Your app is running at http://#{app_url}"
 
 end
 
