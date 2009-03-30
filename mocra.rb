@@ -71,8 +71,12 @@ template do
 # Setup twitter oauth on twitter.com
   if twitter_auth
     twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
-    twitter_user = highline.choose(*twitter_users) do |menu|
-      menu.prompt = "Which twitter user?  "
+    if twitter_users.size > 1
+      twitter_user = highline.choose(*twitter_users) do |menu|
+        menu.prompt = "Which twitter user?  "
+      end
+    else
+      twitter_user = twitter_users.first
     end
     message = run "twitter register_oauth #{twitter_user} '#{application}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
     twitter_auth_keys = parse_keys(message)
@@ -95,9 +99,9 @@ end
   run "rm -rf test"
 
 # Download JQuery
-  run "curl -L http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
-  run "curl -L http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
-  run "curl -L http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
+  run "curl -L -# http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
+  run "curl -L -# http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
+  run "curl -L -# http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
 
   
   file 'config/database.yml', <<-EOS.gsub(/^  /, '')
