@@ -2,8 +2,19 @@
 # from Dr Nic Williams @ http://#{domain} + http://drnicwilliams.com
 # 
 # Optional:
-#  AUTH=twitter - install + setup twitter_auth instead of restful_authentication
+#  DOMAIN       - parent domain (default: mocra.com)
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
+#
+#  The following are just for twitter oauth registration:
+#  ORGANIZATION - name of your company (default: Mocra)
+#  DESCRIPTION  - description of your app (default: This is a cool app)
+#
+# Required gems for this template:
+#   gem install highline
+#   gem install deprec
+#   gem install defunkt-github --source http://gems.github.com
+#   gem install uhlenbrock-slicehost-tools --source=http://gems.github.com
+#   gem install drnic-twitter --source=http://gems.github.com
 #
 # Some setup steps (if wanting twitter_auth support)
 #  twitter install
@@ -28,20 +39,21 @@ template do
   skip_gems      = ENV['SKIP_GEMS']
 
   github_user = run("git config --get github.user").strip
-
+  if github_user.blank?
+    puts <<-EOS.gsub(/^    /, '')
+    You need to install your github username and API token.
+    
+    * Go to http://github.com/accounts
+    * Click "Global Git Config"
+    * Execute the two lines displayed
+    * Run "git config --list" to check that github.user and github.token are installed
+    EOS
+    exit
+  end
+  
 # Set up git repository
   git :init
   git :add => '.'
-
-# Install all gems (some are just required for this template)
-  # gem 'highline'
-  # gem 'capistrano'
-  # gem 'deprec'
-  # gem 'defunkt-github', :source => 'http://gems.github.com'
-  # gem 'uhlenbrock-slicehost-tools', :source => 'http://gems.github.com'
-  # gem 'twitter'
-  # 
-  # rake 'gems:install', :sudo => true unless skip_gems
 
 # Authentication selection
   auth = highline.choose(*%w[restful_authentication twitter_auth]) do |menu|
@@ -69,14 +81,11 @@ template do
 # Authentication gems/plugins
 
 if twitter_auth
-  gem 'twitter-auth', :lib => 'twitter_auth'
+  plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git', :submodule => true
 else
   plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
 end
 
-rake 'gems:install', :sudo => true unless skip_gems
-
-  
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -155,15 +164,14 @@ ActionController::Base.session_store = :active_record_store
   plugin 'quietbacktrace', :git => 'git://github.com/thoughtbot/quietbacktrace.git', :submodule => true
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
-
-  # TODO something broken with rspec install
-  # plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
-  # plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
-  # plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
+  plugin 'cucumber', :git => 'git://github.com/aslakhellesoy/cucumber.git', :submodule => true
+  plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
+  plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
+  plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
 
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
-  # generate "rspec"
+  generate "rspec"
   generate "cucumber"
   if twitter_auth
     generate "twitter_auth --oauth"
