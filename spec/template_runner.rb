@@ -153,6 +153,7 @@ module Rails
     #
     def initializer(filename, data = nil, &block)
       log 'initializer', filename
+      file("config/initializers/#{filename}", data || block.call)
     end
 
     # Generate something using a generator from Rails or a plugin.
@@ -300,6 +301,8 @@ module Rails
     #
     def gsub_file(relative_destination, regexp, *args, &block)
       log 'gsub_file', relative_destination
+      @files ||= {}
+      @files[relative_destination] = block.call
     end
 
     # Append text to a file
@@ -310,6 +313,8 @@ module Rails
     #
     def append_file(relative_destination, data)
       log 'append_file', relative_destination
+      @files ||= {}
+      @files[relative_destination] = data
     end
 
     def destination_path(relative_destination)

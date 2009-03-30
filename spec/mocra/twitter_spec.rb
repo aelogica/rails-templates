@@ -35,6 +35,10 @@ describe "template_runner" do
         @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
         @log.should_not =~ %r{executing  twitter register_oauth}
         @runner.files['config/twitter_auth.yml'].should be_nil
+        @runner.files['config/initializers/mailer.rb'].should_not be_nil
+        @runner.files['config/mailer.yml'].should_not be_nil
+        @runner.files['app/views/users/new.html.erb'].should =~ /mailer.yml/
+        @runner.files['app/controllers/application_controller.rb'].should =~ /^\s+include AuthenticatedSystem$/
         @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
@@ -80,7 +84,7 @@ describe "template_runner" do
     describe "run template" do
       before(:each) do
         @runner.highline.should_receive(:choose).exactly(3).and_return("twitter_auth", "mocra-primary", "drnic")
-        @runner.on_command(:run, "twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
+        @runner.on_command(:run, "twitter register_oauth drnic 'Rails Templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
           <<-EOS.gsub(/^          /, '')
           Nice! You've registered your application successfully.
           Consumer key:    CONSUMERKEY
@@ -101,7 +105,7 @@ describe "template_runner" do
       
       it "should check various things" do
         @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
-        @log.should =~ %r{executing  twitter register_oauth drnic 'rails-templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com}
+        @log.should =~ %r{executing  twitter register_oauth drnic 'Rails Templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com}
         @runner.files['config/twitter_auth.yml'].should_not be_nil
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY}
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET}

@@ -18,7 +18,9 @@ end
 
 template do
   app_name       = File.basename(root)
-  app_subdomain  = app_name.gsub(/_/, '-')
+  application    = app_name.gsub(/[_-]/, ' ').titleize
+  app_subdomain  = app_name.gsub(/[_\s]/, '-').downcase
+  app_db         = app_name.gsub(/[-\s]/, '_').downcase
   domain         = ENV['DOMAIN'] || 'mocra.com'
   app_url        = "#{app_subdomain}.#{domain}"
   organization   = ENV['ORGANIZATION'] || "Mocra"
@@ -60,7 +62,7 @@ template do
     twitter_user = highline.choose(*twitter_users) do |menu|
       menu.prompt = "Which twitter user?  "
     end
-    message = run "twitter register_oauth #{twitter_user} '#{app_name}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+    message = run "twitter register_oauth #{twitter_user} '#{application}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
     twitter_auth_keys = parse_keys(message)
   end
 
@@ -94,7 +96,7 @@ rake 'gems:install', :sudo => true unless skip_gems
     adapter: mysql
     encoding: utf8
     reconnect: false
-    database: #{app_name}_development
+    database: #{app_db}_development
     pool: 5
     username: root
     password:
@@ -104,7 +106,7 @@ rake 'gems:install', :sudo => true unless skip_gems
     adapter: mysql
     encoding: utf8
     reconnect: false
-    database: #{app_name}_test
+    database: #{app_db}_test
     pool: 5
     username: root
     password:
@@ -114,7 +116,7 @@ rake 'gems:install', :sudo => true unless skip_gems
     adapter: mysql
     encoding: utf8
     reconnect: false
-    database: #{app_name}_production
+    database: #{app_db}_production
     pool: 5
     username: root
     password: 
@@ -130,6 +132,7 @@ rake 'gems:install', :sudo => true unless skip_gems
   log/*.log
   tmp/**/*
   config/database.yml
+  config/initializers/site_keys.rb
   EOS
 
 # Commit all work so far to the repository
@@ -236,6 +239,25 @@ ActionController::Base.session_store = :active_record_store
       remember_for: 14 # days
       oauth_callback: "http://#{app_url}/oauth_callback"
     EOS
+  else
+    environment("config.active_record.observers = :user_observer")
+    initializer("mailer.rb", <<-EOS.gsub(/^    /, ''))
+    mailer_options = YAML.load_file("\#{RAILS_ROOT}/config/mailer.yml")
+    ActionMailer::Base.smtp_settings = mailer_options
+    EOS
+    file("config/mailer.yml", <<-EOS.gsub(/^    /, ''))
+    :address: mail.authsmtp.com
+    :domain: #{domain}
+    :authentication: :login
+    :user_name: USERNAME
+    :password: PASSWORD
+    EOS
+    append_file("app/views/users/new.html.erb", <<-EOS.gsub(/^    /, ''))
+    <h2>FIRST - setup activation config/mailer.yml for your mail server</h2>
+    EOS
+    gsub_file("app/controllers/application_controller.rb", /class ApplicationController < ActionController::Base/mi) do
+      "class ApplicationController < ActionController::Base\n  include AuthenticatedSystem"
+    end
   end
   
   file 'spec/blueprints.rb', ''
@@ -251,9 +273,7 @@ ActionController::Base.session_store = :active_record_store
     route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
     
   else
-    route "map.signup  '/signup', :controller => 'users',   :action => 'new'"
-    route "map.login  '/login',  :controller => 'session', :action => 'new'"
-    route "map.logout '/logout', :controller => 'session', :action => 'destroy'"
+    # restful-authentication seems to create other routes but not this one
     route "map.activate '/activate/:activation_code', :controller => 'users', :action => 'activate', :activation_code => nil"
   end
   
@@ -275,14 +295,16 @@ ActionController::Base.session_store = :active_record_store
   set :domain,      "#{app_subdomain}.#{domain}"
   set :repository,  "git://github.com/#{github_user}/\#{application}.git"
   # set :repository,  "git@github.com:#{github_user}/\#{application}.git"
-
-  # If you aren't using Subversion to manage your source code, specify
-  # your SCM below:
+  
   set :scm, :git
+  set :git_enable_submodules, 1
+  
   set :ruby_vm_type,      :ree        # :ree, :mri
   set :web_server_type,   :apache     # :apache, :nginx
   set :app_server_type,   :passenger  # :passenger, :mongrel
   set :db_server_type,    :mysql      # :mysql, :postgresql, :sqlite
+
+  set(:mysql_admin_pass) { db_password }
 
   ssh_options[:forward_agent] = true
   # set :packages_for_project, %w(libmagick9-dev imagemagick libfreeimage3) # list of packages to be installed
@@ -304,6 +326,10 @@ ActionController::Base.session_store = :active_record_store
 
   namespace :deploy do
     task :restart, :roles => :app, :except => { :no_release => true } do
+      top.deprec.app.restart
+    end
+
+    task :start, :roles => :app, :except => { :no_release => true } do
       top.deprec.app.restart
     end
 
@@ -341,7 +367,10 @@ ActionController::Base.session_store = :active_record_store
   run "cap deploy:setup"
   run "cap deploy:cold"
 
-  
+  git :add => '.'
+  git :commit => "-a -m 'Deprec config'"
+  git :push => 'origin master'
+
 # Success!
   log "SUCCESS!"
 
