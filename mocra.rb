@@ -56,10 +56,12 @@ template do
   git :add => '.'
 
 # Authentication selection
-  auth = highline.choose(*%w[restful_authentication twitter_auth]) do |menu|
+  auth = highline.choose(*%w[none restful_authentication twitter_auth]) do |menu|
     menu.prompt = "Which user authentication system?  "
   end
-  twitter_auth = auth == "twitter_auth"
+  authentication         = auth != "none"
+  twitter_auth           = auth == "twitter_auth"
+  restful_authentication = auth == "restful_authentication"
 
 # Setup slicehost slice
 
@@ -86,7 +88,7 @@ template do
 
 if twitter_auth
   plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git', :submodule => true
-else
+elsif restful_authentication
   plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
 end
 
@@ -177,34 +179,38 @@ ActionController::Base.session_store = :active_record_store
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
   generate "cucumber"
+  generate "email_spec"
+  
   if twitter_auth
     generate "twitter_auth --oauth"
-  else
-    # generate 'authenticated', 'user session --include-activation --rspec'
-    generate 'authenticated', 'user session --include-activation'
+  elsif restful_authentication
+    generate 'authenticated', 'user session --include-activation --rspec'
   end
   generate 'app_layout' rescue nil
 
-  generate "email_spec"
-  
   append_file 'features/support/env.rb', <<-EOS.gsub(/^  /, '')
   require "email_spec/cucumber"
   require File.dirname(__FILE__) + "/../../spec/blueprints"
   EOS
   
   generate 'rspec_controller', 'home index'
-  generate 'rspec_controller', 'protected index'
+  
+  if authentication
+    generate 'rspec_controller', 'protected index'
 
-  file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
-  class ProtectedController < ApplicationController
-    before_filter :login_required
+    file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^  /, '')
+    class ProtectedController < ApplicationController
+      before_filter :login_required
 
-    def index
+      def index
+      end
+
     end
+    EOS
 
+    file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   end
-  EOS
-
+  
   if twitter_auth
     file 'app/views/home/index.html.erb', <<-EOS.gsub(/^    /, '')
     <%= link_to "Protected", :controller => :protected %>
@@ -219,7 +225,6 @@ ActionController::Base.session_store = :active_record_store
   else
     file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
   end
-  file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
   
   if twitter_auth
     append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
@@ -251,7 +256,7 @@ ActionController::Base.session_store = :active_record_store
       remember_for: 14 # days
       oauth_callback: "http://#{app_url}/oauth_callback"
     EOS
-  else
+  elsif restful_authentication
     environment("config.active_record.observers = :user_observer")
     initializer("mailer.rb", <<-EOS.gsub(/^    /, ''))
     mailer_options = YAML.load_file("\#{RAILS_ROOT}/config/mailer.yml")
@@ -284,7 +289,7 @@ ActionController::Base.session_store = :active_record_store
     route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
     route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
     
-  else
+  elsif restful_authentication
     # restful-authentication seems to create other routes but not this one
     route "map.activate '/activate/:activation_code', :controller => 'users', :action => 'activate', :activation_code => nil"
   end

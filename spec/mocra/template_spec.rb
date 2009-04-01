@@ -15,6 +15,38 @@ describe "template_runner" do
     end
     it { @runner.slice_names.should == %w[mocra-primary mocra-secondary]}
   end
+  describe "no authentication" do
+    describe "run template" do
+      before(:each) do
+        @runner.highline.should_receive(:choose).exactly(2).and_return("none", "mocra-primary")
+        @runner.on_command(:run, "slicehost-slice list") do
+          <<-EOS.gsub(/^          /, '')
+          + mocra-primary (123.123.123.123)
+          + mocra-secondary (65.65.65.65)
+          EOS
+        end
+        @runner.on_command(:run, "git config --get github.user") { "github_person\n" }
+
+        @runner.run_template
+        @log = @runner.full_log
+      end
+      
+      it "should check various things" do
+        @log.should =~ %r{executing  slicehost-dns add_cname mocra.com rails-templates mocra-primary}
+        @log.should_not =~ %r{executing  twitter register_oauth}
+        @runner.files['config/twitter_auth.yml'].should be_nil
+        @runner.files['config/initializers/mailer.rb'].should be_nil
+        @runner.files['config/mailer.yml'].should be_nil
+        @runner.files['app/views/users/new.html.erb'].should be_nil
+        @runner.files['app/controllers/application_controller.rb'].should_not =~ /^\s+include AuthenticatedSystem$/
+        @log.should =~ %r{file  config/deploy.rb}
+        @log.should =~ %r{executing  cap deploy:setup}
+        @log.should =~ %r{executing  cap deploy:cold}
+        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
+        @log.should =~ %r{executing  github create-from-local}
+      end
+    end
+  end
   describe "restful_authentication" do
     describe "run template" do
       before(:each) do
