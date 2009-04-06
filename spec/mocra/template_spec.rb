@@ -16,9 +16,9 @@ describe "template_runner" do
     it { @runner.slice_names.should == %w[mocra-primary mocra-secondary]}
   end
   describe "no authentication" do
-    describe "run template" do
+    describe "run template for public repo" do
       before(:each) do
-        @runner.highline.should_receive(:choose).exactly(2).and_return("none", "mocra-primary")
+        @runner.highline.should_receive(:choose).exactly(2).and_return("none", "mocra-primary", "public")
         @runner.on_command(:run, "slicehost-slice list") do
           <<-EOS.gsub(/^          /, '')
           + mocra-primary (123.123.123.123)
@@ -42,15 +42,18 @@ describe "template_runner" do
         @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
+      end
+      it "should create and use a public repository" do
         @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
         @log.should =~ %r{executing  github create-from-local}
+        @log.should_not =~ %r{executing  github create-from-local\s+--private}
       end
     end
   end
   describe "restful_authentication" do
-    describe "run template" do
+    describe "run template for private repo" do
       before(:each) do
-        @runner.highline.should_receive(:choose).exactly(2).and_return("restful_authentication", "mocra-primary")
+        @runner.highline.should_receive(:choose).exactly(2).and_return("restful_authentication", "mocra-primary", "private")
         @runner.on_command(:run, "slicehost-slice list") do
           <<-EOS.gsub(/^          /, '')
           + mocra-primary (123.123.123.123)
@@ -74,7 +77,9 @@ describe "template_runner" do
         @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
-        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
+      end
+      it "should create and use a private repository" do
+        @runner.files['config/deploy.rb'].should =~ %r{git@github.com:github_person/}
         @log.should =~ %r{executing  github create-from-local}
       end
     end
@@ -115,7 +120,7 @@ describe "template_runner" do
     end
     describe "run template" do
       before(:each) do
-        @runner.highline.should_receive(:choose).exactly(3).and_return("twitter_auth", "mocra-primary", "drnic")
+        @runner.highline.should_receive(:choose).exactly(4).and_return("twitter_auth", "mocra-primary", "drnic", "public")
         @runner.on_command(:run, "twitter register_oauth drnic 'Rails Templates' http://rails-templates.mocra.com 'This is a cool app' organization='Mocra' organization_url=http://mocra.com") do
           <<-EOS.gsub(/^          /, '')
           Nice! You've registered your application successfully.
@@ -144,8 +149,6 @@ describe "template_runner" do
         @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
-        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
-        @log.should =~ %r{executing  github create-from-local}
       end
     end
   end

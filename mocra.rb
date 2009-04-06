@@ -84,6 +84,12 @@ template do
     twitter_auth_keys = parse_keys(message)
   end
 
+# Public/private github repo
+  repo_privacy = highline.choose('public', 'private') do |menu|
+    menu.prompt = "Public/private github repo?  "
+  end
+  is_private_github = repo_privacy == 'private'
+  
 # Authentication gems/plugins
 
 if twitter_auth
@@ -298,20 +304,15 @@ ActionController::Base.session_store = :active_record_store
   
 # Deployment
   capify!
+  
+  repository = "git#{ is_private_github ? '@' : '://' }github.com#{ is_private_github ? ':' : '/' }#{github_user}/\#{application}.git"
 
   file 'config/deploy.rb', <<-EOS.gsub(/^  /, '')
-  # REMEMBER:
-  # Create github private project
-  #  $ git remote add origin git@github.com:#{github_user}/#{app_name}.git
-  #  $ git push origin master
-  #
-  
   require 'deprec'
 
   set :application, "#{app_name}"
   set :domain,      "#{app_subdomain}.#{domain}"
-  set :repository,  "git://github.com/#{github_user}/\#{application}.git"
-  # set :repository,  "git@github.com:#{github_user}/\#{application}.git"
+  set :repository,  "#{repository}"
   
   set :scm, :git
   set :git_enable_submodules, 1
@@ -377,7 +378,7 @@ ActionController::Base.session_store = :active_record_store
   git :commit => "-a -m 'Plugins and config'"
 
 # GitHub project creation
-  run 'github create-from-local'
+  run "github create-from-local#{ ' --private' if is_private_github }"
 
 # Deploy!
 
