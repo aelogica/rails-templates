@@ -51,10 +51,6 @@ template do
     exit
   end
   
-# Set up git repository
-  git :init
-  git :add => '.'
-
 # Authentication selection
   auth = highline.choose(*%w[none restful_authentication twitter_auth]) do |menu|
     menu.prompt = "Which user authentication system?  "
@@ -145,6 +141,10 @@ end
 # Copy database.yml for distribution use
   run "cp config/database.yml config/database.yml.example"
   
+# Set up git repository
+  git :init
+  git :add => '.'
+
 # Set up .gitignore files
   run "touch tmp/.gitignore log/.gitignore vendor/.gitignore"
   run %{find . -type d -empty | grep -v "vendor" | grep -v ".git" | grep -v "tmp" | xargs -I xxx touch xxx/.gitignore}
