@@ -181,7 +181,6 @@ ActionController::Base.session_store = :active_record_store
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
 
-
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
   generate "cucumber"
@@ -197,8 +196,31 @@ ActionController::Base.session_store = :active_record_store
   append_file 'features/support/env.rb', <<-EOS.gsub(/^  /, '')
   require "email_spec/cucumber"
   require File.dirname(__FILE__) + "/../../spec/blueprints"
+
+  Before do
+    FakeWeb.allow_net_connect = false
+  end
+  EOS
+
+  append_file 'spec/spec_helper.rb', <<-EOS.gsub(/^  /, '')
+  require File.dirname(__FILE__) + '/blueprints'
   EOS
   
+  append_file 'config/environments/test.rb', <<-EOS.gsub(/^  /, '')
+  config.gem 'fakeweb', :version => '>= 1.2.0'
+  config.gem 'faker', :version => '>= 0.3.1'
+  EOS
+  
+  file 'spec/blueprints.rb', <<-EOS.gsub(/^  /, '')
+  # Use 'Ruby Machinst.tmbundle' Cmd+B to generate blueprints from class names
+  require "faker"
+
+  Sham.name  { Faker::Name.name }
+  Sham.login { Faker::Internet.user_name.gsub(/\W/, '')[0..14] } # max 15 chars
+  Sham.message { Faker::Lorem.sentence }
+  
+  EOS
+
   generate 'rspec_controller', 'home index'
   
   if authentication
@@ -283,8 +305,6 @@ ActionController::Base.session_store = :active_record_store
     end
   end
   
-  file 'spec/blueprints.rb', ''
-
   rake 'db:migrate'
   rake 'db:test:clone'
 
