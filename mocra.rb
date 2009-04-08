@@ -70,20 +70,21 @@ template do
   if twitter_auth
     twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
     if twitter_users.size > 1
-      twitter_user = highline.choose(*twitter_users) do |menu|
-        menu.prompt = "Which twitter user?  "
-      end
+      twitter_user = highline.choose(*twitter_users) { |menu| menu.prompt = "Which twitter user?  " }
     else
       twitter_user = twitter_users.first
     end
-    message = run "twitter register_oauth #{twitter_user} '#{application}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}"
+    twitter_permission = highline.choose("read-only", "read-write") do |menu|
+      menu.prompt = "What access level does the application need to user's twitter accounts?  "
+    end
+    twitter_readwrite_flag = (twitter_permission == 'read-write') ? ' --readwrite' : ''
+
+    message = run "twitter register_oauth #{twitter_user} '#{application}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}#{twitter_readwrite_flag}"
     twitter_auth_keys = parse_keys(message)
   end
 
 # Public/private github repo
-  repo_privacy = highline.choose('public', 'private') do |menu|
-    menu.prompt = "Public/private github repo?  "
-  end
+  repo_privacy = highline.choose('public', 'private') { |menu| menu.prompt = "Public/private github repo?  " }
   is_private_github = repo_privacy == 'private'
   
 # Authentication gems/plugins
