@@ -103,7 +103,10 @@ end
   run "rm -f public/javascripts/*"
   run "rm -rf test"
 
+  file "README.md", ""
+
 # Download JQuery
+# TODO move these to app_layout + update application.html.erb
   run "curl -L -# http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
   run "curl -L -# http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
   run "curl -L -# http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
@@ -142,10 +145,6 @@ end
 # Copy database.yml for distribution use
   run "cp config/database.yml config/database.yml.example"
   
-# Set up git repository
-  git :init
-  git :add => '.'
-
 # Set up .gitignore files
   run "touch tmp/.gitignore log/.gitignore vendor/.gitignore"
   run %{find . -type d -empty | grep -v "vendor" | grep -v ".git" | grep -v "tmp" | xargs -I xxx touch xxx/.gitignore}
@@ -157,15 +156,16 @@ end
   config/initializers/site_keys.rb
   EOS
 
-# Commit all work so far to the repository
+# Set up git repository and commit all work so far to the repository
+  git :init
   git :add => '.'
   git :commit => "-a -m 'Initial commit'"
 
 # Set up session store initializer
-  initializer 'session_store.rb', <<-END
-ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
-ActionController::Base.session_store = :active_record_store
-  END
+  initializer 'session_store.rb', <<-EOS.gsub(/^  /, '')
+  ActionController::Base.session = { :session_key => '_#{(1..6).map { |x| (65 + rand(26)).chr }.join}_session', :secret => '#{(1..40).map { |x| (65 + rand(26)).chr }.join}' }
+  ActionController::Base.session_store = :active_record_store
+  EOS
 
 # Set up sessions
   rake 'db:create:all'
