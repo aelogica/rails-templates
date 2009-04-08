@@ -182,6 +182,13 @@ end
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
 
+# Gems
+  gem 'javan-whenever', :lib => false, :version => '>= 0.1.7', :source => 'http://gems.github.com'
+  
+# Gems - testing
+  gem 'fakeweb', :version => '>= 1.2.0', :env => 'test'
+  gem 'faker', :version => '>= 0.3.1', :env => 'test'
+
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
   generate "cucumber"
@@ -207,11 +214,6 @@ end
   require File.dirname(__FILE__) + '/blueprints'
   EOS
   
-  append_file 'config/environments/test.rb', <<-EOS.gsub(/^  /, '')
-  config.gem 'fakeweb', :version => '>= 1.2.0'
-  config.gem 'faker', :version => '>= 0.3.1'
-  EOS
-  
   file 'spec/blueprints.rb', <<-EOS.gsub(/^  /, '')
   # Use 'Ruby Machinst.tmbundle' Cmd+B to generate blueprints from class names
   require "faker"
@@ -222,6 +224,7 @@ end
   
   EOS
 
+# Initial controllers/views
   generate 'rspec_controller', 'home index'
   
   if authentication
@@ -255,6 +258,7 @@ end
     file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
   end
   
+# Miscellaneous configuration
   if twitter_auth
     append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
     append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
@@ -305,7 +309,11 @@ end
       "class ApplicationController < ActionController::Base\n  include AuthenticatedSystem"
     end
   end
-  
+
+# Setup whenever (the cron DSL)
+  run "wheneverize ."
+
+# Run migrations
   rake 'db:migrate'
   rake 'db:test:clone'
 
@@ -362,6 +370,7 @@ end
   before 'deploy:cold', 'deploy:upload_database_yml'
   before 'deploy:cold', 'deploy:ping_ssh_github'
   after 'deploy:symlink', 'deploy:create_symlinks'
+  after "deploy:symlink", "deploy:update_crontab"
 
   namespace :deploy do
     task :restart, :roles => :app, :except => { :no_release => true } do
@@ -381,6 +390,11 @@ end
     task :create_symlinks, :roles => :app do
       run "rm -f \#{current_path}/config/database.yml"
       run "ln -s \#{shared_path}/config/database.yml \#{current_path}/config/database.yml"
+    end
+
+    desc "Update the crontab file"
+    task :update_crontab, :roles => :db do
+      run "cd #{release_path} && whenever --update-crontab #{application}"
     end
 
     desc "ssh git@github.com"
