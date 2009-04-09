@@ -1,5 +1,5 @@
 # mocra.rb
-# from Dr Nic Williams @ http://#{domain} + http://drnicwilliams.com
+# from Dr Nic Williams @ http://mocra.com + http://drnicwilliams.com
 # 
 # Optional:
 #  DOMAIN       - parent domain (default: mocra.com)
