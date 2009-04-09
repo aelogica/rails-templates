@@ -13,4 +13,4 @@ Current library
 * newgit by Joao Vitor
 * facebook by Mark Daggett
 * sethbc by Seth Chandler
-* mocra by Dr Nic Williams
+* mocra by Dr Nic Williams (includes slicehost, dns, twitter-auth, cap deployment)
