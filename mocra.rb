@@ -188,6 +188,7 @@ end
 # Gems - testing
   gem 'fakeweb', :version => '>= 1.2.0', :env => 'test'
   gem 'faker', :version => '>= 0.3.1', :env => 'test'
+  gem 'webrat', :version => '>= 0.4.4', :env => 'test'
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
