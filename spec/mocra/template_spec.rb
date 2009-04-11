@@ -39,12 +39,10 @@ describe "template_runner" do
         @runner.files['config/mailer.yml'].should be_nil
         @runner.files['app/views/users/new.html.erb'].should be_nil
         @runner.files['app/controllers/application_controller.rb'].should_not =~ /^\s+include AuthenticatedSystem$/
-        @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
       end
       it "should create and use a public repository" do
-        @runner.files['config/deploy.rb'].should =~ %r{git://github.com/github_person/}
         @log.should =~ %r{executing  github create-from-local}
         @log.should_not =~ %r{executing  github create-from-local\s+--private}
       end
@@ -74,12 +72,10 @@ describe "template_runner" do
         @runner.files['config/mailer.yml'].should_not be_nil
         @runner.files['app/views/users/new.html.erb'].should =~ /mailer.yml/
         @runner.files['app/controllers/application_controller.rb'].should =~ /^\s+include AuthenticatedSystem$/
-        @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
       end
       it "should create and use a private repository" do
-        @runner.files['config/deploy.rb'].should =~ %r{git@github.com:github_person/}
         @log.should =~ %r{executing  github create-from-local}
       end
     end
@@ -146,7 +142,6 @@ describe "template_runner" do
         @runner.files['config/twitter_auth.yml'].should_not be_nil
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_key: CONSUMERKEY}
         @runner.files['config/twitter_auth.yml'].should =~ %r{oauth_consumer_secret: CONSUMERSECRET}
-        @log.should =~ %r{file  config/deploy.rb}
         @log.should =~ %r{executing  cap deploy:setup}
         @log.should =~ %r{executing  cap deploy:cold}
       end
