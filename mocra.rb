@@ -104,13 +104,6 @@ end
   run "rm -rf test"
 
   file "README.md", ""
-
-# Download JQuery
-# TODO move these to app_layout + update application.html.erb
-  run "curl -L -# http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js > public/javascripts/jquery.js"
-  run "curl -L -# http://jqueryjs.googlecode.com/svn/trunk/plugins/form/jquery.form.js > public/javascripts/jquery.form.js"
-  run "curl -L -# http://plugins.jquery.com/files/jquery.template.js.txt > public/javascripts/jquery.template.js"
-
   
   file 'config/database.yml', <<-EOS.gsub(/^  /, '')
   development:
@@ -200,7 +193,9 @@ end
   elsif restful_authentication
     generate 'authenticated', 'user session --include-activation --rspec'
   end
-  generate 'app_layout' rescue nil
+  
+# Hook for layouts, assets
+  generate 'app_layout'
 
   append_file 'features/support/env.rb', <<-EOS.gsub(/^  /, '')
   require "email_spec/cucumber"
