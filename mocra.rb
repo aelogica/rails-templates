@@ -171,6 +171,7 @@ end
   plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
   plugin 'cucumber', :git => 'git://github.com/aslakhellesoy/cucumber.git', :submodule => true
+  plugin 'webrat', :git => 'git://github.com/brynary/webrat.git', :submodule => true
   plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
@@ -181,7 +182,6 @@ end
 # Gems - testing
   gem 'fakeweb', :version => '>= 1.2.0', :env => 'test'
   gem 'faker', :version => '>= 0.3.1', :env => 'test'
-  gem 'webrat', :version => '>= 0.4.4', :env => 'test'
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
