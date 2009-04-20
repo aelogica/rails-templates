@@ -172,7 +172,7 @@ end
   plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
   plugin 'cucumber', :git => 'git://github.com/aslakhellesoy/cucumber.git', :submodule => true
   plugin 'webrat', :git => 'git://github.com/brynary/webrat.git', :submodule => true
-  plugin 'email-spec', :git => 'git://github.com/drnic/email-spec.git', :submodule => true
+  plugin 'email-spec', :git => 'git://github.com/bmabey/email-spec.git', :submodule => true
   plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
   plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
 
