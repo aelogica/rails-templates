@@ -344,6 +344,7 @@ end
 # Deploy!
 
   run "cap deploy:setup"
+  run "cap deploy:install_gems"
   run "cap deploy:cold"
 
   git :add => '.'
