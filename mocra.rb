@@ -87,14 +87,6 @@ template do
   repo_privacy = highline.choose('public', 'private') { |menu| menu.prompt = "Public/private github repo?  " }
   is_private_github = repo_privacy == 'private'
   
-# Authentication gems/plugins
-
-if twitter_auth
-  plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git', :submodule => true
-elsif restful_authentication
-  plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
-end
-
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -153,6 +145,15 @@ end
   git :init
   git :add => '.'
   git :commit => "-a -m 'Initial commit'"
+
+# Authentication gems/plugins
+
+if twitter_auth
+  plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git', :submodule => true
+elsif restful_authentication
+  plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
+end
+
 
 # Set up session store initializer
   initializer 'session_store.rb', <<-EOS.gsub(/^  /, '')
