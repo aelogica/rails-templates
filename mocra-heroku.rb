@@ -32,7 +32,7 @@ template do
   application    = app_name.gsub(/[_-]/, ' ').titleize
   app_subdomain  = app_name.gsub(/[_\s]/, '-').downcase
   app_db         = app_name.gsub(/[-\s]/, '_').downcase
-  domain         = ENV['DOMAIN'] || 'mocra.com'
+  domain         = 'heruko.com'
   app_url        = "#{app_subdomain}.#{domain}"
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
@@ -59,13 +59,6 @@ template do
   twitter_auth           = auth == "twitter_auth"
   restful_authentication = auth == "restful_authentication"
 
-# Setup slicehost slice
-
-  slice_name = highline.choose(*slice_names) do |menu|
-    menu.prompt = "Install http://#{app_url} application on which slice?  "
-  end
-  run "slicehost-dns add_cname #{domain} #{app_subdomain} #{slice_name}"
-
 # Setup twitter oauth on twitter.com
   if twitter_auth
     twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
@@ -83,10 +76,6 @@ template do
     twitter_auth_keys = parse_keys(message)
   end
 
-# Public/private github repo
-  repo_privacy = highline.choose('public', 'private') { |menu| menu.prompt = "Public/private github repo?  " }
-  is_private_github = repo_privacy == 'private'
-  
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -165,29 +154,27 @@ end
   rake 'db:create:all'
   rake 'db:sessions:create'
 
-# Install submoduled plugins
-  plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git', :submodule => true
-  plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git', :submodule => true
-  plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git', :submodule => true
-  plugin 'machinist', :git => 'git://github.com/notahat/machinist.git', :submodule => true
-  plugin 'paperclip', :git => 'git://github.com/thoughtbot/paperclip.git', :submodule => true
-  plugin 'cucumber', :git => 'git://github.com/aslakhellesoy/cucumber.git', :submodule => true
-  plugin 'webrat', :git => 'git://github.com/brynary/webrat.git', :submodule => true
-  plugin 'email-spec', :git => 'git://github.com/bmabey/email-spec.git', :submodule => true
-  plugin 'rspec', :git => 'git://github.com/dchelimsky/rspec.git', :submodule => true
-  plugin 'rspec-rails', :git => 'git://github.com/dchelimsky/rspec-rails.git', :submodule => true
-
-# Gems
-  gem 'javan-whenever', :lib => false, :version => '>= 0.1.7', :source => 'http://gems.github.com'
-  
 # Gems - testing
+  gem 'cucumber', :env => 'test'
+  gem 'webrat', :env => 'test'
+  gem 'bmabey-email_spec', :env => 'test', :source => "http://gems.github.com"
+  gem 'rspec', :env => 'test'
+  gem 'rspec-rails', :env => 'test'
+  gem 'notahat-machinist', :env => 'test', :source => "http://gems.github.com"
   gem 'fakeweb', :version => '>= 1.2.0', :env => 'test'
   gem 'faker', :version => '>= 0.3.1', :env => 'test'
+
+# Install submoduled plugins
+  plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git'
+  plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git'
+  plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git'
+  plugin 'blue_ridge', :git => 'git://github.com/relevance/blue-ridge.git'
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "rspec"
   generate "cucumber"
   generate "email_spec"
+  generate "blue_ridge"
   
   if twitter_auth
     generate "twitter_auth', '--oauth"
@@ -307,9 +294,6 @@ end
     end
   end
 
-# Setup whenever (the cron DSL)
-  run "wheneverize ."
-
 # Run migrations
   rake 'db:migrate'
   rake 'db:test:clone'
@@ -328,9 +312,6 @@ end
   
   route "map.root :controller => 'home', :action => 'index'"
   
-# Deployment (generates Capfiy)
-  generate "deploy', '--github-user=#{github_user} #{'--public' unless is_private_github} --domain=#{app_url}"
-
 # Initialize submodules
   git :submodule => "init"
 
@@ -338,18 +319,10 @@ end
   git :add => '.'
   git :commit => "-a -m 'Plugins and config'"
 
-# GitHub project creation
-  run "github create-from-local#{ ' --private' if is_private_github }"
-
 # Deploy!
-
-  run "cap deploy:setup"
-  run "cap deploy:cold"
-  run "cap deploy:install_gems"
-
-  git :add => '.'
-  git :commit => "-a -m 'Deprec config'"
-  git :push => 'origin master'
+  run "heroku create #{app_subdomain}"
+  git :push => "heroku master"
+  run "open http://#{app_url}"
 
 # Success!
   log "SUCCESS! Your app is running at http://#{app_url}"
@@ -372,11 +345,6 @@ end
 
 def run_template
   @store_template.call
-end
-
-def slice_names
-  slicehost_list = run "slicehost-slice list"
-  slicehost_list.split("\n").map { |name_ip| name_ip.match(/\+\s+([^\s]+)\s/)[1] }
 end
 
 run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
