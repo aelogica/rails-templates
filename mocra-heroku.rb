@@ -32,7 +32,7 @@ template do
   application    = app_name.gsub(/[_-]/, ' ').titleize
   app_subdomain  = app_name.gsub(/[_\s]/, '-').downcase
   app_db         = app_name.gsub(/[-\s]/, '_').downcase
-  domain         = 'heruko.com'
+  domain         = 'heroku.com'
   app_url        = "#{app_subdomain}.#{domain}"
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
@@ -320,9 +320,10 @@ end
   git :commit => "-a -m 'Plugins and config'"
 
 # Deploy!
-  run "heroku create #{app_subdomain}"
+  heroku "create #{app_subdomain}"
   git :push => "heroku master"
-  run "open http://#{app_url}"
+  heroku "rake db:migrate"
+  heroku "open"
 
 # Success!
   log "SUCCESS! Your app is running at http://#{app_url}"
@@ -341,6 +342,10 @@ def parse_keys(message)
     :key    => (message.match(/Consumer key:\s+(.*)/)[1] rescue "TWITTER_CONSUMERKEY"),
     :secret => (message.match(/Consumer secret:\s+(.*)/)[1] rescue "TWITTER_CONSUMERSECRET")
   }
+end
+
+def heroku(cmd)
+  run "heroku #{cmd}"
 end
 
 def run_template
