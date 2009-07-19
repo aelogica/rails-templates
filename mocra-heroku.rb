@@ -4,6 +4,7 @@
 # Optional:
 #  DOMAIN       - parent domain (default: mocra.com)
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
+#  DB=mysql     - else sqlite3 by default
 #
 #  The following are just for twitter oauth registration:
 #  ORGANIZATION - name of your company (default: Mocra)
@@ -86,36 +87,38 @@ template do
 
   file "README.md", ""
   
-  file 'config/database.yml', <<-EOS.gsub(/^  /, '')
-  development:
-    adapter: mysql
-    encoding: utf8
-    reconnect: false
-    database: #{app_db}_development
-    pool: 5
-    username: root
-    password:
-    socket: /tmp/mysql.sock
+  if ENV['DB'] == "mysql"
+    file 'config/database.yml', <<-EOS.gsub(/^  /, '')
+    development:
+      adapter: mysql
+      encoding: utf8
+      reconnect: false
+      database: #{app_db}_development
+      pool: 5
+      username: root
+      password:
+      socket: /tmp/mysql.sock
 
-  test:
-    adapter: mysql
-    encoding: utf8
-    reconnect: false
-    database: #{app_db}_test
-    pool: 5
-    username: root
-    password:
-    socket: /tmp/mysql.sock
+    test:
+      adapter: mysql
+      encoding: utf8
+      reconnect: false
+      database: #{app_db}_test
+      pool: 5
+      username: root
+      password:
+      socket: /tmp/mysql.sock
 
-  production:
-    adapter: mysql
-    encoding: utf8
-    reconnect: false
-    database: #{app_db}_production
-    pool: 5
-    username: root
-    password: 
-  EOS
+    production:
+      adapter: mysql
+      encoding: utf8
+      reconnect: false
+      database: #{app_db}_production
+      pool: 5
+      username: root
+      password: 
+    EOS
+  end
 # Copy database.yml for distribution use
   run "cp config/database.yml config/database.yml.example"
   
