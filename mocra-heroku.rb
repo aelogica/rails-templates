@@ -138,9 +138,9 @@ template do
 # Authentication gems/plugins
 
 if twitter_auth
-  plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git', :submodule => true
+  plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git'
 elsif restful_authentication
-  plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git', :submodule => true
+  plugin 'restful_authentication', :git => 'git://github.com/technoweenie/restful-authentication.git'
 end
 
 
@@ -155,29 +155,48 @@ end
   rake 'db:sessions:create'
 
 # Gems - testing
-  gem 'cucumber', :env => 'test'
-  gem 'webrat', :env => 'test'
-  gem 'bmabey-email_spec', :env => 'test', :source => "http://gems.github.com"
-  gem 'rspec', :env => 'test'
-  gem 'rspec-rails', :env => 'test'
-  gem 'notahat-machinist', :env => 'test', :source => "http://gems.github.com"
-  gem 'fakeweb', :version => '>= 1.2.0', :env => 'test'
-  gem 'faker', :version => '>= 0.3.1', :env => 'test'
+  gem_with_version "webrat",      :lib => false, :env => 'test'
+  gem_with_version "rspec",       :lib => false, :env => 'test'
+  gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'test'
+  gem_with_version 'bmabey-email_spec', :source => 'http://gems.github.com', :lib => 'email_spec', :env => 'test'
+  gem_with_version 'notahat-machinist', :source => 'http://gems.github.com', :lib => 'machinist', :env => 'test'
+  gem_with_version 'fakeweb', :env => 'test'
+  gem_with_version 'faker', :env => 'test'
+  
+# Make sure all these gems are actually installed locally
+  run "sudo rake gems:install RAILS_ENV=test"
+
+  generate "rspec"
+  generate "email_spec"
+
+# Gems - cucumber
+  generate "cucumber"
+  remove_gems :env => 'cucumber'
+  gem_with_version "aslakhellesoy-cucumber", :lib => false, :env => 'cucumber'
+  gem_with_version "webrat",      :lib => false, :env => 'cucumber'
+  gem_with_version "rspec",       :lib => false, :env => 'cucumber'
+  gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'cucumber'
+  gem_with_version 'bmabey-email_spec', :source => 'http://gems.github.com', :lib => 'email_spec', :env => 'cucumber'
+  gem_with_version 'notahat-machinist', :source => 'http://gems.github.com', :lib => 'machinist', :env => 'cucumber'
+  gem_with_version 'fakeweb', :env => 'cucumber'
+  gem_with_version 'faker', :env => 'cucumber'
+
+# Make sure all these gems are actually installed locally
+  run "sudo rake gems:install RAILS_ENV=cucumber"
 
 # Install submoduled plugins
   plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git'
   plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git'
   plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git'
-  plugin 'blue_ridge', :git => 'git://github.com/relevance/blue-ridge.git'
+  plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
-  generate "rspec"
-  generate "cucumber"
-  generate "email_spec"
   generate "blue_ridge"
   
   if twitter_auth
-    generate "twitter_auth', '--oauth"
+    heroku_gem 'ezcrypto'
+    heroku_gem 'oauth'
+    generate 'twitter_auth', '--oauth'
   elsif restful_authentication
     generate 'authenticated', 'user session --include-activation --rspec'
   end
@@ -320,10 +339,10 @@ end
   git :commit => "-a -m 'Plugins and config'"
 
 # Deploy!
-  heroku "create #{app_subdomain}"
+  heroku :create, app_subdomain
   git :push => "heroku master"
-  heroku "rake db:migrate"
-  heroku "open"
+  heroku :rake, "db:migrate"
+  heroku :open
 
 # Success!
   log "SUCCESS! Your app is running at http://#{app_url}"
@@ -344,8 +363,37 @@ def parse_keys(message)
   }
 end
 
-def heroku(cmd)
-  run "heroku #{cmd}"
+def heroku(cmd, arguments="")
+  run "heroku #{cmd} #{arguments}"
+end
+
+def gem_with_version(name, options = {})
+  if gem_spec = Gem.source_index.find_name(name).last
+    version = gem_spec.version.to_s
+    gem(name, options.merge(:version => ">=#{version}"))
+  else
+    $stderr.puts "ERROR: cannot find gem #{name}; cannot load version. Adding it anyway."
+    gem(name, options)
+  end
+end
+
+def remove_gems(options)
+  env = options.delete(:env)
+  gems_code = /^\s*config.gem.*\n/
+  file = env.nil? ? 'config/environment.rb' : "config/environments/#{env}.rb"
+  gsub_file file, gems_code, ""
+end
+
+# Usage:
+#   heroku_gem 'oauth'
+#   heroku_gem 'hpricot', :version => '>= 0.2', :source => 'code.whytheluckystiff.net'
+#   heroku_gem 'dm-core', :version => '0.9.10'
+def heroku_gem(gem, options = {})
+  file ".gems", "" unless File.exists?(".gems")
+
+  version_str = options[:version] ? "--version '#{options[:version]}'" : ""
+  source_str  = options[:source]  ? "--source '#{options[:source]}'" : ""
+  append_file '.gems', "#{gem} #{version_str} #{source_str}\n"
 end
 
 def run_template
