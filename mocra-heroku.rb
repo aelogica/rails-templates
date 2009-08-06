@@ -192,7 +192,8 @@ end
   plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git'
   plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git'
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
-
+  plugin 'formtastic', :git => 'git://github.com/justinfrench/formtastic.git'
+  
 # Set up RSpec, user model, OpenID, etc, and run migrations
   generate "blue_ridge"
   
