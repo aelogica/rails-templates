@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "template_runner" do
   before(:each) do
-    setup_template_runner
+    setup_template_runner "mocra-slicehost.rb"
   end
   describe "slicehost" do
     before(:each) do
