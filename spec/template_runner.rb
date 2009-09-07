@@ -55,7 +55,7 @@ module Rails
     def gem(name, options = {})
       log 'gem', name
     end
-
+    
     # Adds a line inside the Initializer block for config/environment.rb. Used by #gem
     # If options :env is specified, the line is appended to the corresponding
     # file in config/environments/#{env}.rb
@@ -302,7 +302,7 @@ module Rails
     def gsub_file(relative_destination, regexp, *args, &block)
       log 'gsub_file', relative_destination
       @files ||= {}
-      @files[relative_destination] = block.call
+      @files[relative_destination] = args.first || block.call
     end
 
     # Append text to a file

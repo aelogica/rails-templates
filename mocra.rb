@@ -175,7 +175,7 @@ end
 # Gems - cucumber
   generate "cucumber"
   remove_gems :env => 'cucumber'
-  gem_with_version "aslakhellesoy-cucumber", :lib => false, :env => 'cucumber'
+  gem_with_version "cucumber", :lib => false, :env => 'cucumber'
   gem_with_version "webrat",      :lib => false, :env => 'cucumber'
   gem_with_version "rspec",       :lib => false, :env => 'cucumber'
   gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'cucumber'
