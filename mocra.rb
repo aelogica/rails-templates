@@ -163,7 +163,7 @@ end
   heroku_gem 'mislav-will_paginate', :source => 'http://gems.github.com', :lib => 'will_paginate'
   heroku_gem 'pluginaweek-state_machine', :source => 'http://gems.github.com', :lib => 'state_machine'
   heroku_gem 'justinfrench-formtastic', :source => 'http://gems.github.com', :lib => 'formtastic'
-  heroku_gem "haml"
+  heroku_gem "haml", :version => ">= 2.0.0"
 
 # Gems - testing
   gem_with_version "webrat",      :lib => false, :env => 'test'
@@ -380,11 +380,13 @@ end
 def gem_with_version(name, options = {})
   if gem_spec = Gem.source_index.find_name(name).last
     version = gem_spec.version.to_s
-    gem(name, options.merge(:version => ">=#{version}"))
+    options = {:version => ">= #{version}"}.merge(options)
+    gem(name, options)
   else
     $stderr.puts "ERROR: cannot find gem #{name}; cannot load version. Adding it anyway."
     gem(name, options)
   end
+  options
 end
 
 def remove_gems(options)
@@ -399,7 +401,7 @@ end
 #   heroku_gem 'hpricot', :version => '>= 0.2', :source => 'code.whytheluckystiff.net'
 #   heroku_gem 'dm-core', :version => '0.9.10'
 def heroku_gem(gem, options = {})
-  gem_with_version(gem, options)
+  options = gem_with_version(gem, options)
   file ".gems", "" unless File.exists?(".gems")
 
   version_str = options[:version] ? "--version '#{options[:version]}'" : ""
