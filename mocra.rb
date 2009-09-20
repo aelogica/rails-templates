@@ -157,6 +157,14 @@ end
   rake 'db:create:all'
   rake 'db:sessions:create'
 
+# Common gems
+
+  heroku_gem "giraffesoft-resource_controller", :lib => "resource_controller", :source => "http://gems.github.com"
+  heroku_gem 'mislav-will_paginate', :source => 'http://gems.github.com', :lib => 'will_paginate'
+  heroku_gem 'pluginaweek-state_machine', :source => 'http://gems.github.com', :lib => 'state_machine'
+  heroku_gem 'justinfrench-formtastic', :source => 'http://gems.github.com', :lib => 'formtastic'
+  heroku_gem "haml"
+
 # Gems - testing
   gem_with_version "webrat",      :lib => false, :env => 'test'
   gem_with_version "rspec",       :lib => false, :env => 'test'
@@ -167,7 +175,7 @@ end
   gem_with_version 'faker', :env => 'test'
   
 # Make sure all these gems are actually installed locally
-  run "sudo rake gems:install RAILS_ENV=test"
+  run "sudo rake gems:install RAILS_ENV=test" unless skip_gems
 
   generate "rspec"
   generate "email_spec"
@@ -185,16 +193,14 @@ end
   gem_with_version 'faker', :env => 'cucumber'
 
 # Make sure all these gems are actually installed locally
-  run "sudo rake gems:install RAILS_ENV=cucumber"
+  run "sudo rake gems:install RAILS_ENV=cucumber" unless skip_gems
 
-# Install submoduled plugins
-  plugin 'will_paginate', :git => 'git://github.com/mislav/will_paginate.git'
-  plugin 'state_machine', :git => 'git://github.com/pluginaweek/state_machine.git'
-  plugin 'rails_footnotes', :git => 'git://github.com/josevalim/rails-footnotes.git'
+# Install plugins
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
-  plugin 'formtastic', :git => 'git://github.com/justinfrench/formtastic.git'
-  
+
 # Set up RSpec, user model, OpenID, etc, and run migrations
+  run "haml --rails ."
+  run "rm -rf vendor/plugins/haml" # use gem install
   generate "blue_ridge"
   
   if twitter_auth
@@ -247,7 +253,7 @@ end
     end
     EOS
 
-    file 'app/views/protected/index.html.erb', '<h3><%= current_user.login %></h3>'
+    file 'app/views/protected/index.html.haml', '%h3= current_user.login'
   end
   
   if twitter_auth
@@ -262,7 +268,7 @@ end
     </ul>
     EOS
   else
-    file 'app/views/home/index.html.erb', '<%= link_to "Protected Area", :controller => :protected %>'
+    file 'app/views/home/index.html.haml', '%h1 Welcome!'
   end
   
 # Miscellaneous configuration
@@ -393,6 +399,7 @@ end
 #   heroku_gem 'hpricot', :version => '>= 0.2', :source => 'code.whytheluckystiff.net'
 #   heroku_gem 'dm-core', :version => '0.9.10'
 def heroku_gem(gem, options = {})
+  gem_with_version(gem, options)
   file ".gems", "" unless File.exists?(".gems")
 
   version_str = options[:version] ? "--version '#{options[:version]}'" : ""
