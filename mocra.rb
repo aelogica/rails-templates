@@ -207,6 +207,27 @@ end
   run "rm -rf vendor/plugins/haml" # use gem install
   generate "blue_ridge"
   
+  file 'public/stylesheets/form.css', <<-CSS.gsub(/^  /, '')
+  /* Decent styling of formtastic forms */
+  form li {
+    list-style-type: none;
+  }
+
+  form li {
+    margin: 0 0 0.5em;
+    clear: both;
+  }
+
+  form label {
+    display: block;
+    text-align: right;
+    width: 150px;
+    float: left;
+    position: relative;
+    top: 6px;
+    padding-right: 6px; }
+  CSS
+  
   if twitter_auth
     heroku_gem 'ezcrypto'
     heroku_gem 'oauth'
