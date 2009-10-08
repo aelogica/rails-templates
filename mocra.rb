@@ -161,13 +161,15 @@ end
   rake 'db:create:all'
   rake 'db:sessions:create'
 
-# Common gems
+# Common gems/plugins
 
   heroku_gem "giraffesoft-resource_controller", :lib => "resource_controller", :source => "http://gems.github.com"
   heroku_gem 'mislav-will_paginate', :source => 'http://gems.github.com', :lib => 'will_paginate'
   heroku_gem 'pluginaweek-state_machine', :source => 'http://gems.github.com', :lib => 'state_machine'
   heroku_gem 'justinfrench-formtastic', :source => 'http://gems.github.com', :lib => 'formtastic'
   heroku_gem "haml", :version => ">= 2.0.0"
+  
+  plugin 'validation_reflection', :git => 'git://github.com/redinger/validation_reflection.git'
 
 # Gems - testing
   gem_with_version "webrat",      :lib => false, :env => 'test'
