@@ -135,6 +135,7 @@ template do
   tmp/**/*
   config/database.yml
   config/initializers/site_keys.rb
+  db/*.sqlite3
   EOS
 
 # Set up git repository and commit all work so far to the repository
@@ -188,6 +189,7 @@ end
 
 # Gems - cucumber
   generate "cucumber"
+  
   remove_gems :env => 'cucumber'
   gem_with_version "cucumber", :lib => false, :env => 'cucumber'
   gem_with_version "webrat",      :lib => false, :env => 'cucumber'
@@ -204,13 +206,28 @@ end
 # Install plugins
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
 
+# Hook for layouts, assets
+  generate 'app_layout'
+
 # Set up RSpec, user model, OpenID, etc, and run migrations
   run "haml --rails ."
   run "rm -rf vendor/plugins/haml" # use gem install
   generate "blue_ridge"
   
+  if twitter_auth
+    heroku_gem 'ezcrypto'
+    heroku_gem 'oauth'
+    generate 'twitter_auth', '--oauth'
+  elsif restful_authentication
+    generate 'authenticated', 'user session --include-activation --rspec'
+  end
+  
   file 'public/stylesheets/form.css', <<-CSS.gsub(/^  /, '')
   /* Decent styling of formtastic forms */
+  form fieldset {
+    border: 0;
+  }
+
   form li {
     list-style-type: none;
   }
@@ -227,20 +244,15 @@ end
     float: left;
     position: relative;
     top: 6px;
-    padding-right: 6px; }
+    padding-right: 6px;
+  }
+
+  form .inline-errors {
+    display: inline;
+    color: red;
+  }
   CSS
   
-  if twitter_auth
-    heroku_gem 'ezcrypto'
-    heroku_gem 'oauth'
-    generate 'twitter_auth', '--oauth'
-  elsif restful_authentication
-    generate 'authenticated', 'user session --include-activation --rspec'
-  end
-  
-# Hook for layouts, assets
-  generate 'app_layout'
-
   append_file 'features/support/env.rb', <<-EOS.gsub(/^  /, '')
   require "email_spec/cucumber"
   require File.dirname(__FILE__) + "/../../spec/blueprints"
@@ -268,7 +280,9 @@ end
   
   file 'spec/blueprints.rb', <<-EOS.gsub(/^  /, '')
   # Use 'Ruby Machinst.tmbundle' Cmd+B to generate blueprints from class names
-  require "faker"
+  require 'machinist/active_record'
+  require 'sham'
+  require 'faker'
 
   Sham.define do
     name              { Faker::Name.name }
@@ -388,21 +402,20 @@ end
   
   route "map.root :controller => 'home', :action => 'index'"
   
-# Initialize submodules
-  git :submodule => "init"
-
 # Commit all work so far to the repository
   git :add => '.'
-  git :commit => "-a -m 'Plugins and config'"
+  git :commit => "-a -m 'Gems, plugins and config'"
 
-# Deploy!
-  heroku :create, app_subdomain
-  git :push => "heroku master"
-  heroku :rake, "db:migrate"
-  heroku :open
+  # Deploy!
+  if highline.agree "Deploy to Heroku now?  "
+    heroku :create, app_subdomain
+    git :push => "heroku master"
+    heroku :rake, "db:migrate"
+    heroku :open
 
-# Success!
-  log "SUCCESS! Your app is running at http://#{app_url}"
+    # Success!
+    log "SUCCESS! Your app is running at http://#{app_url}"
+  end
 
 end
 
@@ -458,6 +471,10 @@ end
 
 def run_template
   @store_template.call
+end
+
+def plugin *args
+  
 end
 
 run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
