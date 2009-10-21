@@ -166,7 +166,6 @@ end
 
   heroku_gem "giraffesoft-resource_controller", :lib => "resource_controller", :source => "http://gems.github.com"
   heroku_gem 'mislav-will_paginate', :source => 'http://gems.github.com', :lib => 'will_paginate'
-  heroku_gem 'pluginaweek-state_machine', :source => 'http://gems.github.com', :lib => 'state_machine'
   heroku_gem 'justinfrench-formtastic', :source => 'http://gems.github.com', :lib => 'formtastic'
   heroku_gem "haml", :version => ">= 2.0.0"
   
