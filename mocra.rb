@@ -164,9 +164,9 @@ end
 
 # Common gems/plugins
 
-  heroku_gem "giraffesoft-resource_controller", :lib => "resource_controller", :source => "http://gems.github.com"
-  heroku_gem 'mislav-will_paginate', :source => 'http://gems.github.com', :lib => 'will_paginate'
-  heroku_gem 'justinfrench-formtastic', :source => 'http://gems.github.com', :lib => 'formtastic'
+  heroku_gem "inherited_resources"
+  heroku_gem 'will_paginate'
+  heroku_gem 'formtastic'
   heroku_gem "haml", :version => ">= 2.0.0"
   
   plugin 'validation_reflection', :git => 'git://github.com/redinger/validation_reflection.git'
@@ -175,8 +175,8 @@ end
   gem_with_version "webrat",      :lib => false, :env => 'test'
   gem_with_version "rspec",       :lib => false, :env => 'test'
   gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'test'
-  gem_with_version 'bmabey-email_spec', :source => 'http://gems.github.com', :lib => 'email_spec', :env => 'test'
-  gem_with_version 'notahat-machinist', :source => 'http://gems.github.com', :lib => 'machinist', :env => 'test'
+  gem_with_version 'email_spec', :env => 'test'
+  gem_with_version 'machinist', :env => 'test'
   gem_with_version 'fakeweb', :env => 'test'
   gem_with_version 'faker', :env => 'test'
   
@@ -194,8 +194,8 @@ end
   gem_with_version "webrat",      :lib => false, :env => 'cucumber'
   gem_with_version "rspec",       :lib => false, :env => 'cucumber'
   gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'cucumber'
-  gem_with_version 'bmabey-email_spec', :source => 'http://gems.github.com', :lib => 'email_spec', :env => 'cucumber'
-  gem_with_version 'notahat-machinist', :source => 'http://gems.github.com', :lib => 'machinist', :env => 'cucumber'
+  gem_with_version 'email_spec', :env => 'cucumber'
+  gem_with_version 'machinist', :env => 'cucumber'
   gem_with_version 'fakeweb', :env => 'cucumber'
   gem_with_version 'faker', :env => 'cucumber'
 
