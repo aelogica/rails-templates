@@ -259,6 +259,24 @@ template do
         acts_as_authentic
       end
     EOS
+    file 'spec/models/user_spec.rb', <<-EOS.gsub(/^        /, '')
+      require 'spec_helper'
+
+      describe User do
+        before(:each) do
+          @valid_attributes = {
+            :login                 => "drnic",
+            :email                 => "drnic@mocra.com",
+            :password              => "password",
+            :password_confirmation => "password"
+          }
+        end
+
+        it "should create a new instance given valid attributes" do
+          User.create!(@valid_attributes)
+        end
+      end
+    EOS
   end
   
   file 'public/stylesheets/form.css', <<-CSS.gsub(/^    /, '')
@@ -346,6 +364,7 @@ template do
   
   if authentication
     generate 'rspec_controller', 'protected index'
+    FileUtils.rm_rf 'spec/controllers/protected_controller_spec.rb'
 
     file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^      /, '')
       class ProtectedController < ApplicationController
@@ -523,6 +542,8 @@ template do
   
   route "map.root :controller => 'home', :action => 'index'"
   
+# Remove things we don't use
+  FileUtils.rm_rf 'spec/views'
 # Commit all work so far to the repository
   git :add => '.'
   git :commit => "-a -m 'Gems, plugins and config'"
