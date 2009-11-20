@@ -387,7 +387,53 @@ template do
                 return false
               end
             end
+
+            def store_location
+              session[:return_to] = request.request_uri
+            end
+
+            def redirect_back_or_default(default)
+              redirect_to(session[:return_to] || default)
+              session[:return_to] = nil
+            end
         end
+      EOS
+      generate 'rspec_controller', 'user_sessions'
+      file 'app/controllers/user_sessions_controller.rb', <<-EOS.gsub(/^        /, '')
+        class UserSessionsController < ApplicationController
+          def new
+            @user_session = UserSession.new
+          end
+
+          def create
+            @user_session = UserSession.new(params[:user_session])
+            if @user_session.save
+              redirect_to account_url
+            else
+              render :action => :new
+            end
+          end
+
+          def destroy
+            current_user_session.destroy
+            redirect_to new_user_session_url
+          end
+        end
+      EOS
+      file 'app/views/user_sessions/new.html.haml', <<-EOS.gsub(/^        /, '')
+        - semantic_form_for @user_session, :url => user_session_path do |f|
+          - if @user_session.errors[:base].any?
+            .errorExplanation
+              %ul
+                %li= @user_session.errors[:base]
+
+          - f.inputs do
+            = f.input :login, :required => true
+            = f.input :password, :required => true
+            = f.input :remember_me, :as => :boolean
+          - f.buttons do
+            = f.commit_button "Log in"
+            %li= link_to "Forgot password?", new_password_reset_path
       EOS
     end
   end
@@ -469,6 +515,7 @@ template do
     route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
     route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
   elsif authlogic
+    route "map.resource :password_resets"
     route "map.resource :user_session"
   end
   
