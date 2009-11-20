@@ -517,7 +517,7 @@ template do
     route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
     route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
   elsif authlogic
-    route "map.resource :password_resets"
+    route "map.resource :password_reset"
     route "map.resource :user_session"
   end
   
