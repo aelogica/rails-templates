@@ -174,7 +174,7 @@ template do
   plugin 'validation_reflection', :git => 'git://github.com/redinger/validation_reflection.git'
 
 # Gems - testing
-  gem_with_version "webrat",      :lib => false, :env => 'test'
+  gem_with_version "capybara",      :lib => false, :env => 'test'
   gem_with_version "rspec",       :lib => false, :env => 'test'
   gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'test'
   gem_with_version 'email_spec', :env => 'test'
