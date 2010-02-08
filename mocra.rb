@@ -181,17 +181,17 @@ template do
   gem_with_version 'faker', :env => 'test'
   
 # Make sure all these gems are actually installed locally
-  run "sudo rake gems:install RAILS_ENV=test" unless skip_gems
+  run "rake gems:install RAILS_ENV=test" unless skip_gems
 
   generate "rspec"
   generate "email_spec"
 
 # Gems - cucumber
-  generate "cucumber"
+  generate "cucumber", "--capybara"
   
   remove_gems :env => 'cucumber'
   gem_with_version "cucumber", :lib => false, :env => 'cucumber'
-  gem_with_version "webrat",      :lib => false, :env => 'cucumber'
+  gem_with_version "capybara",      :lib => false, :env => 'cucumber'
   gem_with_version "rspec",       :lib => false, :env => 'cucumber'
   gem_with_version "rspec-rails", :lib => 'spec/rails', :env => 'cucumber'
   gem_with_version 'email_spec', :env => 'cucumber'
@@ -200,9 +200,9 @@ template do
   gem_with_version 'faker', :env => 'cucumber'
 
 # Make sure all these gems are actually installed locally
-  run "sudo rake gems:install RAILS_ENV=cucumber" unless skip_gems
+  run "rake gems:install RAILS_ENV=cucumber" unless skip_gems
 
-# Install plugins
+# Install pluginssdfsdfmhvhgb  
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
 
 # Hook for layouts, assets
