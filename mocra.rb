@@ -5,6 +5,7 @@
 #  DOMAIN       - parent domain (default: mocra.com)
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #  DB=mysql     - else sqlite3 by default
+#  NO_SUDO=1    - don't use sudo to install gems
 #
 #  The following are just for twitter oauth registration:
 #  ORGANIZATION - name of your company (default: Mocra)
@@ -38,6 +39,7 @@ template do
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
   skip_gems      = ENV['SKIP_GEMS']
+  sudo           = ENV['NO_SUDO'] ? '' : 'sudo '
 
   github_user = run("git config --get github.user").strip
   if github_user.blank?
@@ -181,7 +183,7 @@ template do
   gem_with_version 'faker', :env => 'test'
   
 # Make sure all these gems are actually installed locally
-  run "rake gems:install RAILS_ENV=test" unless skip_gems
+  run "#{sudo}rake gems:install RAILS_ENV=test" unless skip_gems
 
   generate "rspec"
   generate "email_spec"
@@ -200,7 +202,7 @@ template do
   gem_with_version 'faker', :env => 'cucumber'
 
 # Make sure all these gems are actually installed locally
-  run "rake gems:install RAILS_ENV=cucumber" unless skip_gems
+  run "#{sudo}rake gems:install RAILS_ENV=cucumber" unless skip_gems
 
 # Install pluginssdfsdfmhvhgb  
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
