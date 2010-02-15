@@ -166,7 +166,7 @@ template do
 
 # Common gems/plugins
 
-  heroku_gem "inherited_resources"
+  heroku_gem "inherited_resources", :version => '1.0.3' # last rails-2.3 version of the gem
   heroku_gem 'will_paginate'
   heroku_gem 'formtastic'
   heroku_gem "haml", :version => ">= 2.0.0"
