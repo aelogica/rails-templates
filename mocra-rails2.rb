@@ -6,6 +6,7 @@
 #  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
 #  DB=mysql     - else sqlite3 by default
 #  NO_SUDO=1    - don't use sudo to install gems
+#  HEROKU=1     - create heroku app, else will be prompted
 #
 #  The following are just for twitter oauth registration:
 #  ORGANIZATION - name of your company (default: Mocra)
@@ -551,8 +552,16 @@ template do
   git :commit => "-a -m 'Gems, plugins and config'"
 
   # Deploy!
-  if highline.agree "Deploy to Heroku now?  "
+  if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "
     heroku :create, app_subdomain
+    heroku :"sharing:add", "dev@mocra.com"
+    heroku :"sharing:transfer", "dev@mocra.com"
+    # heroku :"addons:add", "custom_domains:basic" - doesn't work if you're not dev@mocra.com
+    if highline.agree "Add all Mocra staff?  "
+      ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com"].each do |user|
+        heroku :"sharing:add", user
+      end
+    end
     git :push => "heroku master"
     heroku :rake, "db:migrate"
     heroku :open

@@ -250,6 +250,14 @@ template do
   # Deploy!
   if highline.agree "Deploy to Heroku now?  "
     heroku :create, "#{app_subdomain} --stack bamboo-ree-1.8.7"
+    heroku :"sharing:add", "dev@mocra.com"
+    heroku :"sharing:transfer", "dev@mocra.com"
+    heroku :"addons:add", "custom_domains:basic"
+    if highline.agree "Add all Mocra staff?  "
+      ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com"].each do |user|
+        heroku :"sharing:add", user
+      end
+    end
     git :push => "heroku master"
     heroku :rake, "db:migrate"
     heroku :open
