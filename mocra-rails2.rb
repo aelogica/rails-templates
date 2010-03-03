@@ -7,6 +7,7 @@
 #  DB=mysql     - else sqlite3 by default
 #  NO_SUDO=1    - don't use sudo to install gems
 #  HEROKU=1     - create heroku app, else will be prompted
+#  NO_PLUGINS=1    - for testing script, don't install plugins (which are slow)
 #
 #  The following are just for twitter oauth registration:
 #  ORGANIZATION - name of your company (default: Mocra)
@@ -553,10 +554,19 @@ template do
 
   # Deploy!
   if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "
+    heroku_user = highline.ask("Heroku User?  ") { |q| q.default = default_heroku_user if default_heroku_user }
+    if heroku_user != default_heroku_user
+      heroku_password = highline.ask("Heroku Password (for #{heroku_user})?   ") { |q| q.echo = false }
+    end
+
     heroku :create, app_subdomain
+    if heroku_user != default_heroku_user
+      heroku :"sharing:add", heroku_user
+      heroku :"sharing:transfer", heroku_user
+      git :config => "--add heroku.email #{heroku_user}"
+      git :config => "--add heroku.password '#{heroku_password}'"
+    end
     heroku :"addons:add", "custom_domains:basic"
-    heroku :"sharing:add", "dev@mocra.com"
-    heroku :"sharing:transfer", "dev@mocra.com"
     if highline.agree "Add all Mocra staff?  "
       ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com"].each do |user|
         heroku :"sharing:add", user
@@ -622,12 +632,26 @@ def heroku_gem(gem, options = {})
   append_file '.gems', "#{gem} #{version_str} #{source_str}\n"
 end
 
-def run_template
-  @store_template.call
+def default_heroku_user
+  @default_heroku_user ||= begin
+    credentials = File.join(ENV['HOME'], '.heroku', 'credentials')
+    if File.exist? credentials
+      File.read(credentials) =~ /^(.*@.*)$/
+      $1
+    else
+      false
+    end
+  end
 end
 
-def plugin *args
-  
+def plugin(*args)
+  unless ENV['NO_PLUGINS']
+    super
+  end
+end
+
+def run_template
+  @store_template.call
 end
 
 run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
