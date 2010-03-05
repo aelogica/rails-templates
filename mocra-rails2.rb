@@ -136,10 +136,12 @@ template do
   file '.gitignore', <<-EOS.gsub(/^    /, '')
     .DS_Store
     log/*.log
+    tmp/*
     tmp/**/*
     config/database.yml
     config/initializers/site_keys.rb
     db/*.sqlite3
+    rerun.txt
   EOS
 
 # Set up git repository and commit all work so far to the repository
