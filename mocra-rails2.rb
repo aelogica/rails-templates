@@ -386,6 +386,9 @@ template do
   
     Dir[File.join(File.dirname(__FILE__), 'blueprints', '*_blueprint.rb')].each {|bp| require bp}
   EOS
+  
+  run 'mkdir spec/blueprints'
+  file 'spec/blueprints/.gitignore', ''
 
 # Initial controllers/views
   generate 'rspec_controller', 'home index'
@@ -553,6 +556,9 @@ template do
     :password: PASSWORD
   EOS
 
+  run "rm -rf log"
+  run "mkdir log"
+  
 # Run migrations
   rake 'db:migrate'
   rake 'db:test:clone'
