@@ -332,6 +332,20 @@ template do
       FakeWeb.allow_net_connect = false
     end
   EOS
+  
+  file 'features/support/debug.rb', <<-EOS.gsub(/^    /, '')
+    After do |scenario|
+      $opened_page_count ||= 0
+      if scenario.status == :failed && ($opened_page_count < 5)
+        save_and_open_page
+        $opened_page_count += 1
+        if ENV['PAUSE']
+          puts "Press any key to continue."
+          STDIN.getc
+        end
+      end
+    end
+  EOS
 
   append_file 'spec/spec_helper.rb', <<-EOS.gsub(/^    /, '')
     require File.dirname(__FILE__) + '/blueprints'
