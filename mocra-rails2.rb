@@ -596,6 +596,7 @@ template do
       heroku :"sharing:transfer", heroku_user
       heroku :"addons:add", "cron:daily"
       heroku :"addons:add", "exceptional:basic"
+      heroku :"addons:add", "newrelic:bronze"
       git :config => "--add heroku.email #{heroku_user}"
       git :config => "--add heroku.password '#{heroku_password}'"
     end
