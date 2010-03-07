@@ -143,7 +143,14 @@ template do
     db/*.sqlite3
     rerun.txt
   EOS
+  
+  file 'lib/tasks/cron.rake', <<-EOS.gsub(/^    /, '')
+    desc "Entry point for cron tasks"
+    task :cron do
 
+    end
+  EOS
+  
 # Set up git repository and commit all work so far to the repository
   git :init
   git :add => '.'
@@ -565,6 +572,7 @@ template do
     if heroku_user != default_heroku_user
       heroku :"sharing:add", heroku_user
       heroku :"sharing:transfer", heroku_user
+      heroku :"addons:add", "cron:daily"
       git :config => "--add heroku.email #{heroku_user}"
       git :config => "--add heroku.password '#{heroku_password}'"
     end
