@@ -138,6 +138,7 @@ template do
     log/*.log
     tmp/*
     tmp/**/*
+    capybara-*.html
     config/database.yml
     config/initializers/site_keys.rb
     db/*.sqlite3
