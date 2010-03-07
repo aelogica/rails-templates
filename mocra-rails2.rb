@@ -181,7 +181,8 @@ template do
   heroku_gem "inherited_resources", :version => '1.0.3' # last rails-2.3 version of the gem
   heroku_gem 'will_paginate'
   heroku_gem 'formtastic'
-  heroku_gem "haml", :version => ">= 2.0.0"
+  heroku_gem 'haml', :version => ">= 2.0.0"
+  # Not sure if we need this: heroku_gem 'exceptional'
   
   plugin 'validation_reflection', :git => 'git://github.com/redinger/validation_reflection.git'
 
@@ -594,6 +595,7 @@ template do
       heroku :"sharing:add", heroku_user
       heroku :"sharing:transfer", heroku_user
       heroku :"addons:add", "cron:daily"
+      heroku :"addons:add", "exceptional:basic"
       git :config => "--add heroku.email #{heroku_user}"
       git :config => "--add heroku.password '#{heroku_password}'"
     end
