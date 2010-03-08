@@ -594,13 +594,13 @@ template do
     if heroku_user != default_heroku_user
       heroku :"sharing:add", heroku_user
       heroku :"sharing:transfer", heroku_user
-      heroku :"addons:add", "cron:daily"
-      heroku :"addons:add", "exceptional:basic"
-      heroku :"addons:add", "newrelic:bronze"
       git :config => "--add heroku.email #{heroku_user}"
       git :config => "--add heroku.password '#{heroku_password}'"
     end
     heroku :"addons:add", "custom_domains:basic"
+    heroku :"addons:add", "exceptional:basic"
+    heroku :"addons:add", "newrelic:bronze"
+    heroku :"addons:add", "cron:daily"
     if highline.agree "Add all Mocra staff?  "
       ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com"].each do |user|
         heroku :"sharing:add", user
