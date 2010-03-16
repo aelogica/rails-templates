@@ -3,7 +3,7 @@
 # 
 # Optional:
 #  DOMAIN       - parent domain (default: mocra.com)
-#  SKIP_GEMS=1  - don't install gems (useful if you know they are already installed)
+#  INSTALL_GEMS=1  - don't install gems (useful if you know they are already installed)
 #  DB=mysql     - else sqlite3 by default
 #  NO_SUDO=1    - don't use sudo to install gems
 #  HEROKU=1     - create heroku app, else will be prompted
@@ -40,7 +40,7 @@ template do
   app_url        = "#{app_subdomain}.#{domain}"
   organization   = ENV['ORGANIZATION'] || "Mocra"
   description    = ENV['DESCRIPTION'] || 'This is a cool app'
-  skip_gems      = ENV['SKIP_GEMS']
+  install_gems   = ENV['INSTALL_GEMS']
   sudo           = ENV['NO_SUDO'] ? '' : 'sudo '
 
   github_user = run("git config --get github.user").strip
@@ -196,7 +196,7 @@ template do
   gem_with_version 'faker', :env => 'test'
   
 # Make sure all these gems are actually installed locally
-  run "#{sudo}rake gems:install RAILS_ENV=test" unless skip_gems
+  run "#{sudo}rake gems:install RAILS_ENV=test" if install_gems
 
   generate "rspec"
   generate "email_spec"
@@ -215,7 +215,7 @@ template do
   gem_with_version 'faker', :env => 'cucumber'
 
 # Make sure all these gems are actually installed locally
-  run "#{sudo}rake gems:install RAILS_ENV=cucumber" unless skip_gems
+  run "#{sudo}rake gems:install RAILS_ENV=cucumber" if install_gems
 
 # Install pluginssdfsdfmhvhgb  
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
@@ -583,6 +583,10 @@ template do
   git :add => '.'
   git :commit => "-a -m 'Gems, plugins and config'"
 
+  keep_all_empty_folders
+  git :add => '.'
+  git :commit => "-a -m 'Add .gitignore to all empty folders'"
+
   # Deploy!
   if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "
     heroku_user = highline.ask("Heroku User?  ") { |q| q.default = default_heroku_user if default_heroku_user }
@@ -675,6 +679,19 @@ def default_heroku_user
     else
       false
     end
+  end
+end
+
+def keep_all_empty_folders
+  Dir['**/*'].reject {|p| File.file? p}.each do |path|
+    keep_empty_folder path
+  end
+end
+
+def keep_empty_folder(path)
+  if Dir[File.join(path, "*")].empty?
+    gitignore = File.join(path, ".gitignore")
+    run "touch #{gitignore}"
   end
 end
 
