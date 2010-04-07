@@ -589,6 +589,12 @@ template do
 
   # Deploy!
   if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "
+    file ".slugignore", <<-EOS.gsub(/^      /, '')
+      *.psd
+      *.pdf
+      test
+      spec
+    EOS
     heroku_user = highline.ask("Heroku User?  ") { |q| q.default = default_heroku_user if default_heroku_user }
     if heroku_user != default_heroku_user
       heroku_password = highline.ask("Heroku Password (for #{heroku_user})?   ") { |q| q.echo = false }
