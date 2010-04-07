@@ -594,6 +594,9 @@ template do
       *.pdf
       test
       spec
+      features
+      doc
+      docs
     EOS
     heroku_user = highline.ask("Heroku User?  ") { |q| q.default = default_heroku_user if default_heroku_user }
     if heroku_user != default_heroku_user
