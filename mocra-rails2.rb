@@ -8,6 +8,7 @@
 #  NO_SUDO=1    - don't use sudo to install gems
 #  HEROKU=1     - create heroku app, else will be prompted
 #  NO_PLUGINS=1    - for testing script, don't install plugins (which are slow)
+#  NO_APP_LAYOUT=1 - don't install new theme/run app_layout generator
 #
 #  The following are just for twitter oauth registration:
 #  ORGANIZATION - name of your company (default: Mocra)
@@ -57,29 +58,10 @@ template do
   end
   
 # Authentication selection
-  auth = highline.choose(*%w[none authlogic twitter_auth]) do |menu|
+  auth = highline.choose(*%w[none devise]) do |menu|
     menu.prompt = "Which user authentication system?  "
   end
-  authentication           = auth != "none"
-  twitter_auth             = auth == "twitter_auth"
-  authlogic = auth == "authlogic"
-
-# Setup twitter oauth on twitter.com
-  if twitter_auth
-    twitter_users = `twitter list | grep "^[* ] " | sed -e "s/[* ] //"`.split
-    if twitter_users.size > 1
-      twitter_user = highline.choose(*twitter_users) { |menu| menu.prompt = "Which twitter user?  " }
-    else
-      twitter_user = twitter_users.first
-    end
-    twitter_permission = highline.choose("read-only", "read-write") do |menu|
-      menu.prompt = "What access level does the application need to user's twitter accounts?  "
-    end
-    twitter_readwrite_flag = (twitter_permission == 'read-write') ? ' --readwrite' : ''
-
-    message = run "twitter register_oauth #{twitter_user} '#{application}' http://#{app_url} '#{description}' organization='#{organization}' organization_url=http://#{domain}#{twitter_readwrite_flag}"
-    twitter_auth_keys = parse_keys(message)
-  end
+  authentication = auth != "none"
 
 # Delete unnecessary files
   run "rm README"
@@ -157,14 +139,6 @@ template do
   git :add => '.'
   git :commit => "-a -m 'Initial commit'"
 
-# Authentication gems/plugins
-
-  if twitter_auth
-    plugin 'twitter_auth', :git => 'git://github.com/mbleigh/twitter-auth.git'
-  elsif authlogic
-    heroku_gem 'authlogic'
-  end
-
 
 # Set up session store initializer
   initializer 'session_store.rb', <<-EOS.gsub(/^  /, '')
@@ -221,78 +195,12 @@ template do
   plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
 
 # Hook for layouts, assets
-  generate 'app_layout'
+  generate 'app_layout' unless ENV['NO_APP_LAYOUT']
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
   run "haml --rails ."
   run "rm -rf vendor/plugins/haml" # use gem install
   generate "blue_ridge"
-  
-  if twitter_auth
-    heroku_gem 'ezcrypto'
-    heroku_gem 'oauth'
-    generate 'twitter_auth', '--oauth'
-  elsif authlogic
-    generate 'session', 'user_session'
-    generate 'rspec_model', 'User'
-    create_users_file = Dir['db/migrate/*_create_users.rb'].first
-    file create_users_file, <<-EOS.gsub(/^      /, '')
-      class CreateUsers < ActiveRecord::Migration
-        def self.up
-          create_table :users do |t|
-            t.string    :login,               :null => false                # optional, you can use email instead, or both
-            t.string    :email,               :null => false                # optional, you can use login instead, or both
-            t.string    :crypted_password,    :null => false                # optional, see below
-            t.string    :password_salt,       :null => false                # optional, but highly recommended
-            t.string    :persistence_token,   :null => false                # required
-            t.string    :single_access_token, :null => false                # optional, see Authlogic::Session::Params
-            t.string    :perishable_token,    :null => false                # optional, see Authlogic::Session::Perishability
-
-            # Magic columns, just like ActiveRecord's created_at and updated_at. These are automatically maintained by Authlogic if they are present.
-            t.integer   :login_count,         :null => false, :default => 0 # optional, see Authlogic::Session::MagicColumns
-            t.integer   :failed_login_count,  :null => false, :default => 0 # optional, see Authlogic::Session::MagicColumns
-            t.datetime  :last_request_at                                    # optional, see Authlogic::Session::MagicColumns
-            t.datetime  :current_login_at                                   # optional, see Authlogic::Session::MagicColumns
-            t.datetime  :last_login_at                                      # optional, see Authlogic::Session::MagicColumns
-            t.string    :current_login_ip                                   # optional, see Authlogic::Session::MagicColumns
-            t.string    :last_login_ip                                      # optional, see Authlogic::Session::MagicColumns
-
-            t.timestamps
-          end
-
-          add_index :users, :email
-          add_index :users, :login, :unique => true
-        end
-
-        def self.down
-          drop_table :users
-        end
-      end
-    EOS
-    file 'app/models/user.rb', <<-EOS.gsub(/^        /, '')
-      class User < ActiveRecord::Base
-        acts_as_authentic
-      end
-    EOS
-    file 'spec/models/user_spec.rb', <<-EOS.gsub(/^        /, '')
-      require 'spec_helper'
-
-      describe User do
-        before(:each) do
-          @valid_attributes = {
-            :login                 => "drnic",
-            :email                 => "drnic@mocra.com",
-            :password              => "password",
-            :password_confirmation => "password"
-          }
-        end
-
-        it "should create a new instance given valid attributes" do
-          User.create!(@valid_attributes)
-        end
-      end
-    EOS
-  end
   
   file 'public/stylesheets/form.css', <<-CSS.gsub(/^    /, '')
     /* Decent styling of formtastic forms */
@@ -411,84 +319,7 @@ template do
     file 'app/views/protected/index.html.haml', '%h3= current_user.login'
   end
   
-  if authlogic
-    file 'app/controllers/application_controller.rb', <<-EOS.gsub(/^      /, '')
-      class ApplicationController < ActionController::Base
-        helper :all # include all helpers, all the time
-        protect_from_forgery # See ActionController::RequestForgeryProtection for details
-
-        private
-          def current_user_session
-            return @current_user_session if defined?(@current_user_session)
-            @current_user_session = UserSession.find
-          end
-
-          def current_user
-            return @current_user if defined?(@current_user)
-            @current_user = current_user_session && current_user_session.user
-          end
-
-          def login_required
-            unless current_user
-              if current_user_session && current_user_session.stale?
-                flash[:notice] = "Your session has been logged out automatically"
-              else
-                flash[:error] = "You must be logged in to access this page"
-              end
-
-              store_location
-              redirect_to new_user_session_url
-              return false
-            end
-          end
-
-          def store_location
-            session[:return_to] = request.request_uri
-          end
-
-          def redirect_back_or_default(default)
-            redirect_to(session[:return_to] || default)
-            session[:return_to] = nil
-          end
-      end
-    EOS
-    generate 'rspec_controller', 'user_sessions'
-    file 'app/controllers/user_sessions_controller.rb', <<-EOS.gsub(/^      /, '')
-      class UserSessionsController < ApplicationController
-        def new
-          @user_session = UserSession.new
-        end
-
-        def create
-          @user_session = UserSession.new(params[:user_session])
-          if @user_session.save
-            redirect_to account_url
-          else
-            render :action => :new
-          end
-        end
-
-        def destroy
-          current_user_session.destroy
-          redirect_to new_user_session_url
-        end
-      end
-    EOS
-    file 'app/views/user_sessions/new.html.haml', <<-EOS.gsub(/^      /, '')
-      - semantic_form_for @user_session, :url => user_session_path do |f|
-        - if @user_session.errors[:base].any?
-          .errorExplanation
-            %ul
-              %li= @user_session.errors[:base]
-
-        - f.inputs do
-          = f.input :login, :required => true
-          = f.input :password, :required => true
-          = f.input :remember_me, :as => :boolean
-        - f.buttons do
-          = f.commit_button "Log in"
-          %li= link_to "Forgot password?", new_password_reset_path
-    EOS
+  if devise
   end
   
   if twitter_auth
@@ -570,9 +401,6 @@ template do
     route "map.session_create  '/sessions/create',  :controller => 'session', :action => 'create'"
     route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
     route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
-  elsif authlogic
-    route "map.resource :password_reset"
-    route "map.resource :user_session"
   end
   
   route "map.root :controller => 'home', :action => 'index'"
@@ -589,42 +417,7 @@ template do
 
   # Deploy!
   if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "
-    file ".slugignore", <<-EOS.gsub(/^      /, '')
-      *.psd
-      *.pdf
-      test
-      spec
-      features
-      doc
-      docs
-    EOS
-    heroku_user = highline.ask("Heroku User?  ") { |q| q.default = default_heroku_user if default_heroku_user }
-    if heroku_user != default_heroku_user
-      heroku_password = highline.ask("Heroku Password (for #{heroku_user})?   ") { |q| q.echo = false }
-    end
-
-    heroku :create, app_subdomain
-    if heroku_user != default_heroku_user
-      heroku :"sharing:add", heroku_user
-      heroku :"sharing:transfer", heroku_user
-      git :config => "--add heroku.email #{heroku_user}"
-      git :config => "--add heroku.password '#{heroku_password}'"
-    end
-    heroku :"addons:add", "custom_domains:basic"
-    heroku :"addons:add", "exceptional:basic"
-    heroku :"addons:add", "newrelic:bronze"
-    heroku :"addons:add", "cron:daily"
-    if highline.agree "Add all Mocra staff?  "
-      ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com"].each do |user|
-        heroku :"sharing:add", user
-      end
-    end
-    git :push => "heroku master"
-    heroku :rake, "db:migrate"
-    heroku :open
-
-    # Success!
-    log "SUCCESS! Your app is running at http://#{app_url}"
+    require "./heroku"
   end
 
 end
