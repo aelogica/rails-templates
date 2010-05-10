@@ -26,10 +26,9 @@
 #  twitter add
 #  -> enter username + password; repeat if you have multiple twitter accounts
 
-require "./helpers"
+require File.dirname(__FILE__) + "/template_helpers"
 
 template do
-  app_name       = File.basename(root)
   application    = app_name.gsub(/[_-]/, ' ').titleize
   app_subdomain  = app_name.gsub(/[_\s]/, '-').downcase
   app_db         = app_name.gsub(/[-\s]/, '_').downcase
@@ -417,3 +416,4 @@ template do
   end
 
 end
+

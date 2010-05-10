@@ -3,6 +3,11 @@
 # in unit testing
 def template(&block)
   @store_template = block
+  yield unless ENV['TEST']
+end
+
+def app_name
+  File.basename(root)
 end
 
 def highline
@@ -89,5 +94,3 @@ end
 def run_template
   @store_template.call
 end
-
-run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode

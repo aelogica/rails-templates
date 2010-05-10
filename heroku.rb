@@ -1,4 +1,4 @@
-require "./helpers"
+require File.dirname(__FILE__) + "/template_helpers"
 
 staff = ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com", 
   "scottandrewharvey@gmail.com", "mark@mocra.com"]

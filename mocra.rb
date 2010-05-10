@@ -299,8 +299,6 @@ def heroku(cmd, arguments="")
 end
 
 def run_template
-  @store_template.call
+  @store_template.call if @store_template
 end
 
-
-run_template unless ENV['TEST_MODE'] # hold off running the template whilst in unit testing mode
