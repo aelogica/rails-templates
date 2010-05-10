@@ -1,3 +1,5 @@
+require "./helpers"
+
 heroku_gem 'devise'
 
 generate 'devise_install'

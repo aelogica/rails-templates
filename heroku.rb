@@ -1,3 +1,5 @@
+require "./helpers"
+
 staff = ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com", 
   "scottandrewharvey@gmail.com", "mark@mocra.com"]
   
