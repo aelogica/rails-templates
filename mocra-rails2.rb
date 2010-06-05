@@ -284,24 +284,6 @@ template do
 
 # Initial controllers/views
   generate 'rspec_controller', 'home index'
-  
-  if authentication
-    generate 'rspec_controller', 'protected index'
-    FileUtils.rm_rf 'spec/controllers/protected_controller_spec.rb'
-
-    file 'app/controllers/protected_controller.rb', <<-EOS.gsub(/^      /, '')
-      class ProtectedController < ApplicationController
-        before_filter :login_required
-
-        def index
-        end
-
-      end
-    EOS
-
-    file 'app/views/protected/index.html.haml', '%h3= current_user.login'
-  end
-  
 
   initializer "mailer.rb", <<-EOS.gsub(/^    /, '')
     mailer_options = YAML.load_file("\#{RAILS_ROOT}/config/mailer.yml")
