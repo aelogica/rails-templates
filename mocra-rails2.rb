@@ -26,7 +26,7 @@
 #  twitter add
 #  -> enter username + password; repeat if you have multiple twitter accounts
 
-require File.dirname(__FILE__) + "/template_helpers"
+load File.join(File.dirname(root), File.dirname(template), "template_helpers.rb")
 
 template do
   application    = app_name.gsub(/[_-]/, ' ').titleize
@@ -52,12 +52,6 @@ template do
     exit
   end
   
-# Authentication selection
-  auth = highline.choose(*%w[none devise]) do |menu|
-    menu.prompt = "Which user authentication system?  "
-  end
-  authentication = auth != "none"
-
 # Delete unnecessary files
   run "rm README"
   run "rm public/index.html"
@@ -104,8 +98,6 @@ template do
       password: 
     EOS
   end
-# Copy database.yml for distribution use
-  run "cp config/database.yml config/database.yml.example"
   
 # Set up .gitignore files
   run "touch tmp/.gitignore log/.gitignore vendor/.gitignore"
@@ -147,7 +139,7 @@ template do
 
 # Common gems/plugins
 
-  heroku_gem "inherited_resources", :version => '1.0.3' # last rails-2.3 version of the gem
+  heroku_gem "inherited_resources", :version => '1.0.6' # last rails-2.3 version of the gem
   heroku_gem 'will_paginate'
   heroku_gem 'formtastic'
   heroku_gem 'haml', :version => ">= 2.0.0"
@@ -186,16 +178,12 @@ template do
 # Make sure all these gems are actually installed locally
   run "#{sudo}rake gems:install RAILS_ENV=cucumber" if install_gems
 
-# Install pluginssdfsdfmhvhgb  
-  plugin 'blue_ridge', :git => 'git://github.com/drnic/blue-ridge.git'
-
 # Hook for layouts, assets
   generate 'app_layout' unless ENV['NO_APP_LAYOUT']
 
 # Set up RSpec, user model, OpenID, etc, and run migrations
   run "haml --rails ."
   run "rm -rf vendor/plugins/haml" # use gem install
-  generate "blue_ridge"
   
   file 'public/stylesheets/form.css', <<-CSS.gsub(/^    /, '')
     /* Decent styling of formtastic forms */
@@ -314,62 +302,6 @@ template do
     file 'app/views/protected/index.html.haml', '%h3= current_user.login'
   end
   
-  if devise
-  end
-  
-  if twitter_auth
-    file 'app/views/home/index.html.erb', <<-EOS.gsub(/^      /, '')
-      <%= link_to "Protected", :controller => :protected %>
-
-      <h3>Recent users (<%= User.count %>)</h3>
-      <ul>
-      <% for user in User.all -%>
-        <li><%= image_tag(user.profile_image_url) %><%= user.name %> (<%= link_to h(user.login), "http://twitter.com/\#{h user.login}" %>)</li>
-      <% end -%>
-      </ul>
-    EOS
-  elsif authentication
-    file 'app/views/home/index.html.haml', <<-EOS.gsub(/^      /, '')
-      %h1 Welcome!
-      %p
-        = link_to "Protected", :controller => :protected
-    EOS
-  else
-    file 'app/views/home/index.html.haml', '%h1 Welcome!'
-  end
-  
-# Miscellaneous configuration
-  if twitter_auth
-    append_file 'config/environments/development.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
-    append_file 'config/environments/test.rb', "\n\nOpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE\n"
-    
-    file 'config/twitter_auth.yml', <<-EOS.gsub(/^      /, '')
-      development:
-        strategy: oauth
-        oauth_consumer_key: #{twitter_auth_keys[:key]}
-        oauth_consumer_secret: #{twitter_auth_keys[:secret]}
-        base_url: "https://twitter.com"
-        api_timeout: 10
-        remember_for: 14 # days
-        oauth_callback: "http://#{app_subdomain}.local/oauth_callback"
-      test:
-        strategy: oauth
-        oauth_consumer_key: #{twitter_auth_keys[:key]}
-        oauth_consumer_secret: #{twitter_auth_keys[:secret]}
-        base_url: "https://twitter.com"
-        api_timeout: 10
-        remember_for: 14 # days
-        oauth_callback: "http://#{app_subdomain}.local/oauth_callback"
-      production:
-        strategy: oauth
-        oauth_consumer_key: #{twitter_auth_keys[:key]}
-        oauth_consumer_secret: #{twitter_auth_keys[:secret]}
-        base_url: "https://twitter.com"
-        api_timeout: 10
-        remember_for: 14 # days
-        oauth_callback: "http://#{app_url}/oauth_callback"
-    EOS
-  end
 
   initializer "mailer.rb", <<-EOS.gsub(/^    /, '')
     mailer_options = YAML.load_file("\#{RAILS_ROOT}/config/mailer.yml")
@@ -390,18 +322,11 @@ template do
   rake 'db:migrate'
   rake 'db:test:clone'
 
-# Routes
-  if twitter_auth
-    route "map.login  '/login',  :controller => 'session', :action => 'new'"
-    route "map.session_create  '/sessions/create',  :controller => 'session', :action => 'create'"
-    route "map.session_destroy  '/sessions/destroy',  :controller => 'session', :action => 'destroy'"
-    route "map.oauth_callback  '/oauth_callback',  :controller => 'session', :action => 'oauth_callback'"
-  end
-  
   route "map.root :controller => 'home', :action => 'index'"
   
 # Remove things we don't use
   FileUtils.rm_rf 'spec/views'
+
 # Commit all work so far to the repository
   git :add => '.'
   git :commit => "-a -m 'Gems, plugins and config'"
@@ -409,6 +334,11 @@ template do
   keep_all_empty_folders
   git :add => '.'
   git :commit => "-a -m 'Add .gitignore to all empty folders'"
+
+# Copy database.yml for distribution use
+  run "cp config/database.yml config/database.yml.example"
+  git :add => '.'
+  git :commit => "-a -m 'Example database.yml'"
 
   # Deploy!
   if ENV['HEROKU'] or highline.agree "Deploy to Heroku now?  "

@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + "/template_helpers"
+load File.join(File.dirname(root), File.dirname(template), "template_helpers.rb")
 
 staff = ["bjeanes@mocra.com", "chendo@mocra.com", "odindutton@gmail.com", 
   "scottandrewharvey@gmail.com", "mark@mocra.com"]

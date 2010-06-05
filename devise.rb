@@ -1,4 +1,4 @@
-load File.join(File.dirname(template), "template_helpers.rb")
+load File.join(File.dirname(root), File.dirname(template), "template_helpers.rb")
 
 heroku_gem 'devise'
 
